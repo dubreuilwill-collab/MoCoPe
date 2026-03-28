@@ -1,5 +1,9 @@
 
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
+#coach-map{height:220px;border-radius:14px;overflow:hidden;border:1px solid rgba(0,200,190,0.2);margin-bottom:10px;}
+.leaflet-container{background:#07192a;}
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif;}
 :root{--c:#00C8BE;--c2:#4ECDC4;--bg0:#05111f;--bg1:#07192a;--bg2:#0a3d52;--bg3:#072d3d;--card:rgba(255,255,255,0.06);--bord:rgba(0,200,190,0.15);--nav:#050f1a;--navbord:rgba(0,200,190,0.15);}
 body{background:transparent;}
@@ -121,6 +125,8 @@ input::placeholder{color:rgba(255,255,255,0.3);}
 <script>
 let currentScreen = 'login';
 let menuOpen = false;
+let coachView = 'liste'; // 'liste' ou 'carte'
+let coachMap = null;
 let onbStep = 0;
 let onbForm = {sexe:'femme',age:25,poids:68,taille:165,activite:'sedentaire',goal:'poids'};
 let weight = 68.0;
@@ -146,10 +152,10 @@ let billingType = 'monthly';
 let selectedPlan = 'premium';
 
 const coaches = [
-  {id:1,initials:"AM",color:"#00C8BE",name:"Alex Moreau",spec:"Perte de poids",dist:"0.4 km",price:45,rating:4.9,reviews:47,avail:true,tags:["Nutrition","HIIT","Cardio"]},
-  {id:2,initials:"JB",color:"#4ECDC4",name:"Julie Blanc",spec:"Prise de masse",dist:"0.8 km",price:55,rating:4.8,reviews:32,avail:true,tags:["Musculation","Force","Bulk"]},
-  {id:3,initials:"MD",color:"#00A8D8",name:"Marc Denis",spec:"Performance",dist:"1.2 km",price:60,rating:5.0,reviews:18,avail:false,tags:["Athlétisme","Cross","HIIT"]},
-  {id:4,initials:"SP",color:"#00C8BE",name:"Sarah Petit",spec:"Remise en forme",dist:"1.5 km",price:40,rating:4.7,reviews:61,avail:true,tags:["Débutants","Yoga","Pilates"]},
+  {id:1,initials:"AM",color:"#00C8BE",name:"Alex Moreau",spec:"Perte de poids",dist:"0.4 km",price:45,rating:4.9,reviews:47,avail:true,tags:["Nutrition","HIIT","Cardio"],lat:48.8566,lng:2.3522},
+  {id:2,initials:"JB",color:"#4ECDC4",name:"Julie Blanc",spec:"Prise de masse",dist:"0.8 km",price:55,rating:4.8,reviews:32,avail:true,tags:["Musculation","Force","Bulk"],lat:48.8606,lng:2.3376},
+  {id:3,initials:"MD",color:"#00A8D8",name:"Marc Denis",spec:"Performance",dist:"1.2 km",price:60,rating:5.0,reviews:18,avail:false,tags:["Athlétisme","Cross","HIIT"],lat:48.8490,lng:2.3640},
+  {id:4,initials:"SP",color:"#00C8BE",name:"Sarah Petit",spec:"Remise en forme",dist:"1.5 km",price:40,rating:4.7,reviews:61,avail:true,tags:["Débutants","Yoga","Pilates"],lat:48.8650,lng:2.3700},
 ];
 
 const badges = [
@@ -611,12 +617,19 @@ function render(){
       <div style="background:linear-gradient(135deg,#05111f,#0a3d52);padding:40px 20px 16px;">
         <div class="white f20 f900 mb4">Trouver un Coach</div>
         <div class="gray f11 mb10">4 coachs disponibles près de toi 📍</div>
-        <div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;">
+        <div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;margin-bottom:10px;">
           <span class="gray">🔍</span><span class="gray f13">Nom, spécialité...</span>
+        </div>
+        <div style="display:flex;background:rgba(255,255,255,0.06);border-radius:10px;padding:3px;gap:3px;">
+          <div onclick="coachView='liste';render();" style="flex:1;text-align:center;padding:7px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:900;background:${coachView==='liste'?'rgba(0,200,190,0.2)':'transparent'};color:${coachView==='liste'?'var(--c)':'rgba(255,255,255,0.4)'};">📋 Liste</div>
+          <div onclick="coachView='carte';render();" style="flex:1;text-align:center;padding:7px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:900;background:${coachView==='carte'?'rgba(0,200,190,0.2)':'transparent'};color:${coachView==='carte'?'var(--c)':'rgba(255,255,255,0.4)'};">🗺️ Carte</div>
         </div>
       </div>
       <div class="pb24 px20 mt12" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
-        <div class="white f13 f900">${coaches.length} coachs disponibles</div>
+        ${coachView==='carte'?`
+          <div id="coach-map"></div>
+          <div class="white f13 f900">${coaches.length} coachs disponibles</div>
+        `:`<div class="white f13 f900">${coaches.length} coachs disponibles</div>`}
         ${coaches.map(c=>`<div onclick="selectedCoach=${JSON.stringify(c).replace(/"/g,'&quot;')}; go('coach_profile');" style="background:var(--card);border:1px solid var(--bord);border-radius:16px;padding:14px;cursor:pointer;display:flex;gap:12px;">
           <div style="position:relative;flex-shrink:0;">
             <div class="avatar" style="width:48px;height:48px;background:${c.color};font-size:14px;">${c.initials}</div>
@@ -633,6 +646,19 @@ function render(){
       </div>
       ${soloNav('find_coach')}
     </div>`;
+    if(coachView==='carte'){
+      setTimeout(()=>{
+        if(coachMap){coachMap.remove();coachMap=null;}
+        const mapEl=document.getElementById('coach-map');
+        if(!mapEl)return;
+        coachMap=L.map('coach-map',{zoomControl:true,attributionControl:false}).setView([48.856,2.352],14);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(coachMap);
+        coaches.forEach(c=>{
+          const icon=L.divIcon({html:`<div style="background:${c.color};width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#05111f;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.5);">${c.initials}</div>`,className:'',iconSize:[36,36],iconAnchor:[18,18]});
+          L.marker([c.lat,c.lng],{icon}).addTo(coachMap).bindPopup(`<div style="background:#07192a;color:white;border-radius:8px;padding:8px;min-width:140px;"><b style="color:${c.color};">${c.name}</b><br><span style="font-size:11px;color:#aaa;">${c.spec}</span><br><span style="color:#00C8BE;font-weight:900;">${c.price}€/séance</span><br><span style="color:${c.avail?'#10B981':'#6b7280'};font-size:11px;">● ${c.avail?'Disponible':'Indisponible'}</span></div>`);
+        });
+      },100);
+    }
   }
 
   else if(s==='coach_profile'){
