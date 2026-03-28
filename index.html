@@ -158,25 +158,82 @@ const coaches = [
   {id:4,initials:"SP",color:"#00C8BE",name:"Sarah Petit",spec:"Remise en forme",dist:"1.5 km",price:40,rating:4.7,reviews:61,avail:true,tags:["Débutants","Yoga","Pilates"],lat:48.8650,lng:2.3700},
 ];
 
+const BADGE_CATS = [
+  {id:"seances",  label:"Séances",   icon:"🏋️", color:"#00C8BE"},
+  {id:"nutrition",label:"Nutrition", icon:"🍽️", color:"#10B981"},
+  {id:"streaks",  label:"Streaks",   icon:"🔥", color:"#00A8D8"},
+  {id:"poids",    label:"Poids",     icon:"⚖️", color:"#00A8D8"},
+  {id:"social",   label:"Social",    icon:"👔", color:"#4ECDC4"},
+  {id:"defis",    label:"Défis",     icon:"🏆", color:"#FDCB6E"},
+];
+const TIER_COLOR = {bronze:"#CD7F32",argent:"#9CA3AF",or:"#F59E0B",legendaire:"#A855F7"};
+const TIER_LABEL = {bronze:"🥉",argent:"🥈",or:"🥇",legendaire:"👑"};
 const badges = [
-  {icon:"👟",name:"Premier pas",tier:"🥉",earned:true,xp:50},
-  {icon:"🏃",name:"En route",tier:"🥉",earned:true,xp:100},
-  {icon:"💪",name:"Habitué",tier:"🥉",earned:true,xp:150},
-  {icon:"🔥",name:"En feu",tier:"🥉",earned:true,xp:200},
-  {icon:"⚔️",name:"Warrior",tier:"🥈",earned:true,xp:500},
-  {icon:"🍽️",name:"1ère assiette",tier:"🥉",earned:true,xp:50},
-  {icon:"🎯",name:"Objectif kcal",tier:"🥉",earned:true,xp:100},
-  {icon:"📅",name:"Régulier",tier:"🥈",earned:false,xp:300},
-  {icon:"💯",name:"Century Club",tier:"🥇",earned:false,xp:1000},
-  {icon:"👑",name:"Elite",tier:"👑",earned:false,xp:5000},
-  {icon:"🥦",name:"Nutri Pro",tier:"🥈",earned:false,xp:300},
-  {icon:"🛡️",name:"Indestructible",tier:"🥇",earned:false,xp:1500},
-  {icon:"♾️",name:"Immortel",tier:"👑",earned:false,xp:5000},
-  {icon:"📉",name:"Premier kilo",tier:"🥉",earned:false,xp:200},
-  {icon:"🏆",name:"-5kg",tier:"🥇",earned:false,xp:1000},
-  {icon:"🦋",name:"Transformation",tier:"👑",earned:false,xp:3000},
-  {icon:"❄️",name:"Janvier Fit",tier:"🥇",earned:false,xp:1000},
-  {icon:"🌈",name:"M.C.P Legend",tier:"👑",earned:false,xp:9999},
+  // SÉANCES
+  {id:"s1", cat:"seances",   tier:"bronze",    icon:"👟", name:"Premier pas",     earned:true,  xp:50,   desc:"Complète ta 1ère séance"},
+  {id:"s2", cat:"seances",   tier:"bronze",    icon:"🏃", name:"En route",        earned:true,  xp:100,  desc:"5 séances complétées"},
+  {id:"s3", cat:"seances",   tier:"bronze",    icon:"💪", name:"Habitué",         earned:true,  xp:150,  desc:"10 séances complétées"},
+  {id:"s4", cat:"seances",   tier:"argent",    icon:"📅", name:"Régulier",        earned:false, xp:300,  desc:"25 séances complétées"},
+  {id:"s5", cat:"seances",   tier:"argent",    icon:"🥈", name:"Athlète",         earned:false, xp:500,  desc:"50 séances complétées"},
+  {id:"s6", cat:"seances",   tier:"or",        icon:"💯", name:"Century Club",    earned:false, xp:1000, desc:"100 séances complétées"},
+  {id:"s7", cat:"seances",   tier:"or",        icon:"🦾", name:"Iron Man",        earned:false, xp:2000, desc:"250 séances complétées"},
+  {id:"s8", cat:"seances",   tier:"legendaire",icon:"👑", name:"Elite",           earned:false, xp:5000, desc:"500 séances — Tu es une légende"},
+  {id:"s9", cat:"seances",   tier:"bronze",    icon:"🌅", name:"Matin difficile", earned:false, xp:100,  desc:"3 séances avant 7h du matin"},
+  {id:"s10",cat:"seances",   tier:"argent",    icon:"🌙", name:"Noctambule",      earned:false, xp:200,  desc:"5 séances après 21h"},
+  {id:"s11",cat:"seances",   tier:"bronze",    icon:"🧍", name:"Full Body",       earned:false, xp:150,  desc:"Entraîne tous les groupes musculaires"},
+  {id:"s12",cat:"seances",   tier:"argent",    icon:"⚡", name:"No Rest Day",     earned:false, xp:400,  desc:"7 séances en 7 jours"},
+  // NUTRITION
+  {id:"n1", cat:"nutrition", tier:"bronze",    icon:"🍽️",name:"Première assiette",earned:true,  xp:50,   desc:"1er repas enregistré"},
+  {id:"n2", cat:"nutrition", tier:"bronze",    icon:"🥗", name:"Bien nourri",     earned:false, xp:100,  desc:"7 jours de suivi nutritionnel"},
+  {id:"n3", cat:"nutrition", tier:"argent",    icon:"🥦", name:"Nutri Pro",       earned:false, xp:300,  desc:"30 jours de suivi consécutifs"},
+  {id:"n4", cat:"nutrition", tier:"or",        icon:"🧑‍🍳",name:"Nutri Master",   earned:false, xp:800,  desc:"90 jours de suivi nutritionnel"},
+  {id:"n5", cat:"nutrition", tier:"bronze",    icon:"💧", name:"Hydraté",         earned:false, xp:80,   desc:"2L d'eau 3 jours de suite"},
+  {id:"n6", cat:"nutrition", tier:"argent",    icon:"🐪", name:"Camel",           earned:false, xp:250,  desc:"2L d'eau pendant 30 jours"},
+  {id:"n7", cat:"nutrition", tier:"bronze",    icon:"🎯", name:"Objectif atteint",earned:true,  xp:100,  desc:"Atteins ton objectif calorique"},
+  {id:"n8", cat:"nutrition", tier:"argent",    icon:"✅", name:"Dans le vert",    earned:false, xp:300,  desc:"7 jours dans l'objectif calorique"},
+  {id:"n9", cat:"nutrition", tier:"or",        icon:"⚖️", name:"Équilibre parfait",earned:false,xp:700,  desc:"30j dans l'objectif calorique"},
+  {id:"n10",cat:"nutrition", tier:"bronze",    icon:"📷", name:"Scanner addict",  earned:false, xp:100,  desc:"Scanne 10 aliments"},
+  {id:"n11",cat:"nutrition", tier:"argent",    icon:"🔍", name:"Food Detective",  earned:false, xp:300,  desc:"Scanne 50 aliments différents"},
+  {id:"n12",cat:"nutrition", tier:"bronze",    icon:"⏰", name:"Chrono-guru",     earned:false, xp:150,  desc:"Suis la chrono-nutrition 7 jours"},
+  // STREAKS
+  {id:"st1",cat:"streaks",   tier:"bronze",    icon:"🚀", name:"Lancé",           earned:false, xp:100,  desc:"3 jours de streak"},
+  {id:"st2",cat:"streaks",   tier:"bronze",    icon:"🔥", name:"En feu",          earned:true,  xp:200,  desc:"7 jours de streak"},
+  {id:"st3",cat:"streaks",   tier:"argent",    icon:"⚔️", name:"Warrior",         earned:true,  xp:500,  desc:"30 jours de streak"},
+  {id:"st4",cat:"streaks",   tier:"or",        icon:"🛡️", name:"Indestructible",  earned:false, xp:1500, desc:"60 jours de streak"},
+  {id:"st5",cat:"streaks",   tier:"legendaire",icon:"♾️", name:"Immortel",        earned:false, xp:5000, desc:"365 jours de streak !"},
+  {id:"st6",cat:"streaks",   tier:"bronze",    icon:"📆", name:"Lundi gagnant",   earned:false, xp:100,  desc:"Ne rate jamais un lundi"},
+  {id:"st7",cat:"streaks",   tier:"argent",    icon:"🏖️", name:"Week-end warrior",earned:false, xp:250,  desc:"Entraîne-toi chaque week-end"},
+  {id:"st8",cat:"streaks",   tier:"bronze",    icon:"↩️", name:"Retour en force", earned:false, xp:150,  desc:"Reprends après 7 jours d'absence"},
+  {id:"st9",cat:"streaks",   tier:"argent",    icon:"🧘", name:"Imperturbable",   earned:false, xp:400,  desc:"0 doubles absences en 1 mois"},
+  // POIDS
+  {id:"p1", cat:"poids",     tier:"bronze",    icon:"📉", name:"Premier kilo",    earned:false, xp:200,  desc:"Perd ton premier kg"},
+  {id:"p2", cat:"poids",     tier:"argent",    icon:"🎯", name:"−3kg",            earned:false, xp:500,  desc:"Perds 3 kg par rapport au départ"},
+  {id:"p3", cat:"poids",     tier:"or",        icon:"🏆", name:"−5kg",            earned:false, xp:1000, desc:"Perds 5 kg par rapport au départ"},
+  {id:"p4", cat:"poids",     tier:"legendaire",icon:"🦋", name:"Transformation",  earned:false, xp:3000, desc:"Perds 10 kg — Métamorphose totale"},
+  {id:"p5", cat:"poids",     tier:"bronze",    icon:"⚖️", name:"Poids stable",    earned:false, xp:150,  desc:"Maintiens ton poids 2 semaines"},
+  {id:"p6", cat:"poids",     tier:"argent",    icon:"📊", name:"Régulier",        earned:false, xp:400,  desc:"Pèse-toi chaque jour pendant 30j"},
+  {id:"p7", cat:"poids",     tier:"bronze",    icon:"✅", name:"IMC normal",      earned:false, xp:300,  desc:"Atteins un IMC entre 18.5 et 25"},
+  {id:"p8", cat:"poids",     tier:"argent",    icon:"💪", name:"Objectif corps",  earned:false, xp:600,  desc:"Atteins ton poids cible"},
+  // SOCIAL
+  {id:"so1",cat:"social",    tier:"bronze",    icon:"🤝", name:"Networker",       earned:false, xp:100,  desc:"Contacte ton 1er coach"},
+  {id:"so2",cat:"social",    tier:"bronze",    icon:"⭐", name:"Abonné",          earned:false, xp:200,  desc:"Souscris à un abonnement"},
+  {id:"so3",cat:"social",    tier:"argent",    icon:"👔", name:"Coaché",          earned:false, xp:500,  desc:"1 mois avec un coach"},
+  {id:"so4",cat:"social",    tier:"or",        icon:"🤜", name:"Duo gagnant",     earned:false, xp:800,  desc:"3 mois avec le même coach"},
+  {id:"so5",cat:"social",    tier:"bronze",    icon:"🗺️", name:"Explorateur",     earned:false, xp:100,  desc:"Visite les profils de 5 coachs"},
+  {id:"so6",cat:"social",    tier:"argent",    icon:"📣", name:"Ambassadeur",     earned:false, xp:400,  desc:"Partage 3 badges sur les réseaux"},
+  {id:"so7",cat:"social",    tier:"bronze",    icon:"🌟", name:"5 étoiles",       earned:false, xp:150,  desc:"Note un coach après une séance"},
+  {id:"so8",cat:"social",    tier:"argent",    icon:"📝", name:"Critique",        earned:false, xp:300,  desc:"Laisse 5 avis sur des coachs"},
+  // DÉFIS
+  {id:"d1", cat:"defis",     tier:"or",        icon:"❄️", name:"Janvier Fit",     earned:false, xp:1000, desc:"20 séances en janvier"},
+  {id:"d2", cat:"defis",     tier:"or",        icon:"☀️", name:"Summer Body",     earned:false, xp:1000, desc:"3 mois sans pause"},
+  {id:"d3", cat:"defis",     tier:"legendaire",icon:"🦸", name:"Ultraman",        earned:false, xp:9999, desc:"Toutes les catégories à niveau Or"},
+  {id:"d4", cat:"defis",     tier:"argent",    icon:"🤸", name:"Push-up King",    earned:false, xp:500,  desc:"100 séances Poitrine / Bras"},
+  {id:"d5", cat:"defis",     tier:"argent",    icon:"🏃", name:"Cardio Addict",   earned:false, xp:500,  desc:"50 séances de cardio"},
+  {id:"d6", cat:"defis",     tier:"or",        icon:"🏅", name:"Marathon",        earned:false, xp:1500, desc:"100 séances de cardio"},
+  {id:"d7", cat:"defis",     tier:"bronze",    icon:"🔭", name:"Curieux",         earned:false, xp:100,  desc:"Teste chaque écran de l'app"},
+  {id:"d8", cat:"defis",     tier:"argent",    icon:"🚫", name:"Sans sucre",      earned:false, xp:400,  desc:"21 jours de chrono-nutrition"},
+  {id:"d9", cat:"defis",     tier:"or",        icon:"⚔️", name:"Samouraï",        earned:false, xp:2000, desc:"50j streak + objectif calorique"},
+  {id:"d10",cat:"defis",     tier:"legendaire",icon:"🌈", name:"M.C.P Legend",    earned:false, xp:9999, desc:"Débloque 40 badges"},
 ];
 
 function calcCals(){
@@ -570,17 +627,22 @@ function render(){
       </div>
       <div class="pb24 px20 mt12" style="flex:1;overflow-y:auto;">
       ${statsTab==='badges'?`
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-          ${badges.map(b=>`<div style="background:${b.earned?'#FDF0E6':'rgba(255,255,255,0.04)'};border:2px solid ${b.earned?'#E8A96A':'rgba(255,255,255,0.06)'};border-radius:14px;padding:10px 6px;text-align:center;opacity:${b.earned?1:0.45};">
-            <div style="position:relative;display:inline-block;margin-bottom:4px;">
-              <div style="width:44px;height:44px;border-radius:10px;background:${b.earned?'white':'#F3F4F6'};border:1.5px solid ${b.earned?'#E8A96A':'#E5E7EB'};display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto;">${b.icon}</div>
-              <div style="position:absolute;top:-4px;right:-4px;font-size:10px;">${b.tier}</div>
-              ${b.earned?'<div style="position:absolute;bottom:-4px;right:-4px;width:14px;height:14px;background:#10B981;border-radius:50%;border:1px solid white;display:flex;align-items:center;justify-content:center;font-size:9px;color:white;">✓</div>':''}
-            </div>
-            <div style="font-size:10px;font-weight:900;color:${b.earned?'#92400e':'rgba(255,255,255,0.5)'};line-height:1.2;">${b.name}</div>
-            <div style="font-size:10px;font-weight:900;color:${b.earned?'#CD7F32':'#9CA3AF'};margin-top:2px;">${b.xp} XP</div>
-          </div>`).join('')}
+        <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;">
+          ${BADGE_CATS.map(cat=>{const earned=badges.filter(b=>b.cat===cat.id&&b.earned).length;const total=badges.filter(b=>b.cat===cat.id).length;return`<div style="flex-shrink:0;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:6px 10px;text-align:center;min-width:60px;"><div style="font-size:16px;">${cat.icon}</div><div style="font-size:9px;font-weight:900;color:${cat.color};margin-top:2px;">${earned}/${total}</div><div style="font-size:8px;color:rgba(255,255,255,0.4);">${cat.label}</div></div>`;}).join('')}
         </div>
+        ${BADGE_CATS.map(cat=>{
+          const catBadges=badges.filter(b=>b.cat===cat.id);
+          return`<div style="margin-bottom:14px;"><div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;"><span style="font-size:14px;">${cat.icon}</span><span style="color:${cat.color};font-size:12px;font-weight:900;">${cat.label}</span><span style="color:rgba(255,255,255,0.3);font-size:10px;">${catBadges.filter(b=>b.earned).length}/${catBadges.length}</span></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
+            ${catBadges.map(b=>{const tc=TIER_COLOR[b.tier]||'#9CA3AF';const tl=TIER_LABEL[b.tier]||'🥉';return`<div style="background:${b.earned?'rgba(255,255,255,0.08)':'rgba(255,255,255,0.03)'};border:1.5px solid ${b.earned?tc:'rgba(255,255,255,0.06)'};border-radius:12px;padding:8px 4px;text-align:center;opacity:${b.earned?1:0.5};position:relative;">
+              <div style="width:38px;height:38px;border-radius:8px;background:${b.earned?tc+'22':'rgba(255,255,255,0.04)'};border:1px solid ${b.earned?tc:'rgba(255,255,255,0.08)'};display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 4px;">${b.icon}</div>
+              <div style="position:absolute;top:4px;right:4px;font-size:9px;">${tl}</div>
+              ${b.earned?'<div style="position:absolute;top:4px;left:4px;width:12px;height:12px;background:#10B981;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;color:white;">✓</div>':''}
+              <div style="font-size:9px;font-weight:900;color:${b.earned?'white':'rgba(255,255,255,0.4)'};line-height:1.2;">${b.name}</div>
+              <div style="font-size:9px;color:${b.earned?tc:'rgba(255,255,255,0.25)'};margin-top:1px;">${b.xp} XP</div>
+            </div>`;}).join('')}
+          </div></div>`;
+        }).join('')}
       `:`
         <div class="card mb12">
           <div class="sb mb10"><div class="white f13 f900">Évolution du poids</div></div>
