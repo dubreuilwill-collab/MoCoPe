@@ -651,6 +651,9 @@ function render(){
         if(coachMap){coachMap.remove();coachMap=null;}
         const mapEl=document.getElementById('coach-map');
         if(!mapEl)return;
+        mapEl.style.height='220px';
+        mapEl.style.minHeight='220px';
+        mapEl.style.display='block';
         coachMap=L.map('coach-map',{zoomControl:true,attributionControl:false}).setView([48.856,2.352],14);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(coachMap);
         coaches.forEach(c=>{
