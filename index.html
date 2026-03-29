@@ -130,7 +130,8 @@ let menuOpen = false;
 let coachView = 'liste'; // 'liste' ou 'carte'
 let coachMap = null;
 let onbStep = 0;
-let onbForm = {sexe:'femme',age:25,poids:68,taille:165,activite:'sedentaire',goal:'poids'};
+let onbForm = {sexe:'femme',age:25,poids:68,taille:165,activite:'sedentaire',goal:'poids',birthday:''};
+let birthdayDismissed = false;
 let weight = 68.0;
 let water = 4;
 let goalCal = 1800;
@@ -258,6 +259,7 @@ const badges = [
   {id:"d8", cat:"defis",     tier:"argent",    icon:"🚫", name:"Sans sucre",      earned:false, xp:400,  desc:"21 jours de chrono-nutrition"},
   {id:"d9", cat:"defis",     tier:"or",        icon:"⚔️", name:"Samouraï",        earned:false, xp:2000, desc:"50j streak + objectif calorique"},
   {id:"d10",cat:"defis",     tier:"legendaire",icon:"🌈", name:"M.C.P Legend",    earned:false, xp:9999, desc:"Débloque 40 badges"},
+  {id:"bday",cat:"defis",    tier:"legendaire",icon:"🎂", name:"Birthday Warrior", earned:false, xp:2500, desc:"Fais une séance le jour de ton anniversaire 🎂"},
 ];
 
 const SEANCES=[
@@ -281,10 +283,38 @@ const SEANCES=[
   ]},
 ];
 
+function calcAge(){
+  if(!onbForm.birthday)return onbForm.age;
+  const now=new Date();
+  const bday=new Date(onbForm.birthday);
+  let age=now.getFullYear()-bday.getFullYear();
+  const m=now.getMonth()-bday.getMonth();
+  if(m<0||(m===0&&now.getDate()<bday.getDate()))age--;
+  return Math.max(15,Math.min(90,age));
+}
+
+function isBirthday(){
+  if(!onbForm.birthday)return false;
+  const now=new Date();
+  const bday=new Date(onbForm.birthday);
+  return now.getMonth()===bday.getMonth()&&now.getDate()===bday.getDate();
+}
+
+function birthdayAge(){
+  if(!onbForm.birthday)return null;
+  const now=new Date();
+  const bday=new Date(onbForm.birthday);
+  let age=now.getFullYear()-bday.getFullYear();
+  const m=now.getMonth()-bday.getMonth();
+  if(m<0||(m===0&&now.getDate()<bday.getDate()))age--;
+  return age;
+}
+
 function calcCals(){
+  const age=calcAge();
   const mb = onbForm.sexe==='homme'
-    ? 10*onbForm.poids+6.25*onbForm.taille-5*onbForm.age+5
-    : 10*onbForm.poids+6.25*onbForm.taille-5*onbForm.age-161;
+    ? 10*onbForm.poids+6.25*onbForm.taille-5*age+5
+    : 10*onbForm.poids+6.25*onbForm.taille-5*age-161;
   const nap = {sedentaire:1.2,leger:1.375,actif:1.55,tres_actif:1.725}[onbForm.activite]||1.2;
   const dej = Math.round(mb*nap);
   const delta = {poids:-400,remise:-200,perf:0,masse:350}[onbForm.goal]||0;
@@ -386,14 +416,32 @@ function render(){
         </div>
         <div style="background:var(--card);border:1px solid var(--bord);border-radius:14px;padding:14px;margin-bottom:10px;">
           <div style="display:flex;justify-content:space-around;align-items:center;">
-            ${[['age','Âge',15,80,' ans'],['taille','Taille',140,220,' cm'],['poids','Poids',30,200,' kg']].map(([k,l,min,max,u])=>`
+            ${[['taille','Taille',140,220,' cm'],['poids','Poids',30,200,' kg']].map(([k,l,min,max,u])=>`
             <div style="text-align:center;">
               <div class="gray f11 f900" style="text-transform:uppercase;margin-bottom:6px;">${l}</div>
               <button onclick="setOnbForm('${k}',Math.max(${min},onbForm.${k}-1))" style="background:rgba(255,255,255,0.08);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;">−</button>
               <div style="color:var(--c);font-weight:900;font-size:18px;margin:4px 0;">${onbForm[k]}${u}</div>
               <button onclick="setOnbForm('${k}',Math.min(${max},onbForm.${k}+1))" style="background:var(--c);border:none;color:#05111f;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;">+</button>
             </div>`).join('<div style="width:1px;height:80px;background:rgba(255,255,255,0.1);"></div>')}
+            <div style="width:1px;height:80px;background:rgba(255,255,255,0.1);"></div>
+            <div style="text-align:center;">
+              <div class="gray f11 f900" style="text-transform:uppercase;margin-bottom:6px;">Âge</div>
+              ${onbForm.birthday
+                ? `<div style="color:var(--c);font-weight:900;font-size:18px;margin:4px 0;">${calcAge()} ans</div><div class="gray" style="font-size:9px;">auto 🎂</div>`
+                : `<button onclick="setOnbForm('age',Math.max(15,onbForm.age-1))" style="background:rgba(255,255,255,0.08);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;">−</button>
+                   <div style="color:var(--c);font-weight:900;font-size:18px;margin:4px 0;">${onbForm.age} ans</div>
+                   <button onclick="setOnbForm('age',Math.min(90,onbForm.age+1))" style="background:var(--c);border:none;color:#05111f;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;">+</button>`
+              }
+            </div>
           </div>
+        </div>
+        <div style="background:var(--card);border:1px solid ${isBirthday()?'rgba(168,85,247,0.5)':'var(--bord)'};border-radius:14px;padding:14px;margin-bottom:10px;${isBirthday()?'background:rgba(168,85,247,0.08);':''}">
+          <div class="sb mb8">
+            <div class="gray f11 f900" style="text-transform:uppercase;letter-spacing:.06em;">🎂 Date de naissance</div>
+            ${onbForm.birthday?`<span style="color:var(--c);font-size:10px;font-weight:900;">✓ Âge auto : ${calcAge()} ans</span>`:'<span class="gray f11">Optionnel</span>'}
+          </div>
+          <input type="date" value="${onbForm.birthday}" onchange="onbForm.birthday=this.value;onbForm.age=calcAge();saveData();render();" style="width:100%;background:rgba(0,200,190,0.08);border:1px solid rgba(0,200,190,0.3);border-radius:10px;padding:10px 14px;color:white;font-size:13px;outline:none;color-scheme:dark;"/>
+          ${isBirthday()?`<div style="margin-top:8px;background:linear-gradient(135deg,rgba(168,85,247,0.2),rgba(236,72,153,0.2));border-radius:8px;padding:8px;text-align:center;"><span style="font-size:12px;font-weight:900;color:#C084FC;">🎉 Joyeux anniversaire ! Entraîne-toi aujourd'hui pour le badge Birthday Warrior 🏆</span></div>`:''}
         </div>
         <div style="background:${imc.color}18;border:2px solid ${imc.color}44;border-radius:14px;padding:12px;margin-bottom:10px;">
           <div class="sb mb8"><div class="white f13 f900">IMC ${imc.emoji}</div><div class="pill" style="background:${imc.color};color:white;">${imc.cat}</div></div>
@@ -459,7 +507,7 @@ function render(){
           <div style="color:var(--c2);font-size:13px;font-weight:700;margin-bottom:10px;">kcal / jour</div>
           <div style="display:flex;justify-content:center;gap:12px;color:rgba(255,255,255,0.5);font-size:11px;">
             <span>${onbForm.sexe==='femme'?'♀️ Femme':'♂️ Homme'}</span>
-            <span>🎂 ${onbForm.age} ans</span>
+            <span>🎂 ${calcAge()} ans</span>
             <span>⚖️ ${onbForm.poids} kg</span>
           </div>
         </div>
@@ -505,6 +553,23 @@ function render(){
         </div>
       </div>
       <div class="pb24 px20 mt12" style="display:flex;flex-direction:column;gap:12px;">
+        ${isBirthday()&&!birthdayDismissed?`
+        <div style="background:linear-gradient(135deg,#7C3AED,#DB2777);border-radius:16px;padding:16px;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:-10px;right:-10px;font-size:60px;opacity:0.15;">🎂</div>
+          <div onclick="birthdayDismissed=true;render();" style="position:absolute;top:8px;right:10px;color:rgba(255,255,255,0.6);font-size:16px;cursor:pointer;line-height:1;">✕</div>
+          <div style="text-align:center;padding:4px 0;">
+            <div style="font-size:44px;margin-bottom:6px;">🎂🎉🎊</div>
+            <div style="color:white;font-size:18px;font-weight:900;margin-bottom:6px;">Joyeux anniversaire Sophie !</div>
+            <div style="color:rgba(255,255,255,0.85);font-size:12px;margin-bottom:12px;line-height:1.5;">Tu as ${calcAge()} ans aujourd'hui 🎉<br>Quelle fierté ! Continue comme ça, tu es une vraie championne 💪</div>
+            <div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:10px;display:flex;align-items:center;gap:8px;">
+              <div style="font-size:20px;">🏆</div>
+              <div style="text-align:left;">
+                <div style="color:white;font-size:12px;font-weight:900;">Badge <em>Birthday Warrior</em> disponible !</div>
+                <div style="color:rgba(255,255,255,0.7);font-size:10px;">Fais une séance aujourd'hui pour le débloquer</div>
+              </div>
+            </div>
+          </div>
+        </div>`:''}
         <div class="card">
           <div class="sb mb8"><div class="white f13 f900">Poids du jour ⚖️</div><div style="color:var(--c);font-weight:900;">${weight.toFixed(1)} kg</div></div>
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
@@ -1277,13 +1342,14 @@ function saveData(){
     localStorage.setItem('mcp_water',JSON.stringify({date:today(),val:water}));
     localStorage.setItem('mcp_meals',JSON.stringify({date:today(),done:meals.map(m=>m.d)}));
     localStorage.setItem('mcp_runHistory',JSON.stringify(runHistory));
+    localStorage.setItem('mcp_badges',JSON.stringify(badges.map(b=>({id:b.id,earned:b.earned}))));
   }catch(e){}
 }
 
 function loadData(){
   try{
     const onb=localStorage.getItem('mcp_onb');
-    if(onb)onbForm=JSON.parse(onb);
+    if(onb){onbForm={...onbForm,...JSON.parse(onb)};}
     const wt=localStorage.getItem('mcp_weight');
     if(wt)weight=parseFloat(wt);
     const st=localStorage.getItem('mcp_streak');
@@ -1296,6 +1362,8 @@ function loadData(){
     if(m){const md=JSON.parse(m);if(md.date===today())md.done.forEach((d,i)=>{if(meals[i])meals[i].d=d;});}
     const rh=localStorage.getItem('mcp_runHistory');
     if(rh)runHistory=JSON.parse(rh);
+    const bds=localStorage.getItem('mcp_badges');
+    if(bds){const saved=JSON.parse(bds);saved.forEach(sb=>{const b=badges.find(x=>x.id===sb.id);if(b)b.earned=sb.earned;});}
   }catch(e){}
 }
 // ───────────────────────────────────────────────────────────────────────────
@@ -1349,6 +1417,21 @@ function skipRest(){
 function completeSeance(){
   streak++;
   totalSeances++;
+  // Birthday Warrior badge
+  if(isBirthday()){
+    const bdayBadge=badges.find(b=>b.id==='bday');
+    if(bdayBadge&&!bdayBadge.earned){
+      bdayBadge.earned=true;
+      // Show congrats toast
+      setTimeout(()=>{
+        const toast=document.createElement('div');
+        toast.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#7C3AED,#DB2777);color:white;padding:14px 20px;border-radius:14px;font-weight:900;font-size:13px;z-index:9999;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5);';
+        toast.innerHTML='🎂 Badge <em>Birthday Warrior</em> débloqué ! +2500 XP 👑';
+        document.body.appendChild(toast);
+        setTimeout(()=>toast.remove(),4000);
+      },600);
+    }
+  }
   saveData();
   clearInterval(seanceTotalIv);seanceTotalIv=null;
   go('solo_dash');
