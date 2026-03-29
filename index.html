@@ -3,6 +3,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 #coach-map{height:220px;border-radius:14px;overflow:hidden;border:1px solid rgba(0,200,190,0.2);margin-bottom:10px;}
+#run-map{height:200px;overflow:hidden;}
 .leaflet-container{background:#07192a;}
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif;}
 :root{--c:#00C8BE;--c2:#4ECDC4;--bg0:#05111f;--bg1:#07192a;--bg2:#0a3d52;--bg3:#072d3d;--card:rgba(255,255,255,0.06);--bord:rgba(0,200,190,0.15);--nav:#050f1a;--navbord:rgba(0,200,190,0.15);}
@@ -95,6 +96,7 @@ input::placeholder{color:rgba(255,255,255,0.3);}
       <div class="nav-group-label">💪 SPORTIF SOLO</div>
       <button class="nav-item" id="item-solo_dash" onclick="go('solo_dash')">Dashboard Solo</button>
       <button class="nav-item" id="item-solo_seances" onclick="go('solo_seances')">Mes Séances</button>
+      <button class="nav-item" id="item-run_tracker" onclick="go('run_tracker')">🏃 Course à pied</button>
       <button class="nav-item" id="item-solo_nutri" onclick="go('solo_nutri')">Nutrition</button>
       <button class="nav-item" id="item-solo_stats" onclick="go('solo_stats')">Stats & Badges</button>
       <button class="nav-item" id="item-find_coach" onclick="go('find_coach')">🔍 Trouver un Coach</button>
@@ -150,6 +152,17 @@ let msgSent = false;
 let payStep = 'form';
 let billingType = 'monthly';
 let selectedPlan = 'premium';
+let runState='idle';
+let runSec=0;
+let runDist=0;
+let runPoints=[];
+let runMap2=null;
+let runLine=null;
+let runWatchId=null;
+let runTimerIv=null;
+let runSimIv=null;
+let runSimStep=0;
+const RUN_SIM_DIRS=[[0.00004,0.00006],[0.00004,0.00006],[0.00005,0.00005],[0.00004,0.00007],[0.00003,0.00006],[0.00005,0.00004],[0.00004,0.00006],[0.00003,0.00005],[-0.00001,0.00006],[-0.00003,0.00005],[-0.00004,0.00004],[-0.00005,0.00004],[-0.00005,0.00002],[-0.00005,-0.00001],[-0.00004,-0.00003],[-0.00005,-0.00004],[-0.00004,-0.00005],[-0.00003,-0.00005],[-0.00002,-0.00006],[0.00001,-0.00006],[0.00003,-0.00005],[0.00004,-0.00004],[0.00005,-0.00002],[0.00004,0.00001]];
 
 const coaches = [
   {id:1,initials:"AM",color:"#00C8BE",name:"Alex Moreau",spec:"Perte de poids",dist:"0.4 km",price:45,rating:4.9,reviews:47,avail:true,tags:["Nutrition","HIIT","Cardio"],lat:48.8566,lng:2.3522},
@@ -275,8 +288,8 @@ function go(screen){
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
   const el=document.getElementById('item-'+screen);
   if(el)el.classList.add('active');
-  const labels={login:'🔐 Connexion',onboarding:'🎯 Onboarding',solo_dash:'Dashboard Solo',solo_seances:'Mes Séances',solo_nutri:'Nutrition',solo_stats:'Stats & Badges',find_coach:'🔍 Coach',food_scan:'📷 Scanner',subscription:'💳 Abonnement',payment:'💰 Paiement',coach_dash:'Dashboard Coach',coach_messages:'Messagerie'};
-  const groups={login:'🔑',onboarding:'🔑',solo_dash:'💪 Solo',solo_seances:'💪 Solo',solo_nutri:'💪 Solo',solo_stats:'💪 Solo',find_coach:'💪 Solo',food_scan:'💪 Solo',subscription:'💪 Solo',payment:'💪 Solo',coach_dash:'👔 Coach',coach_messages:'👔 Coach'};
+  const labels={login:'🔐 Connexion',onboarding:'🎯 Onboarding',solo_dash:'Dashboard Solo',solo_seances:'Mes Séances',run_tracker:'🏃 Course à pied',solo_nutri:'Nutrition',solo_stats:'Stats & Badges',find_coach:'🔍 Coach',food_scan:'📷 Scanner',subscription:'💳 Abonnement',payment:'💰 Paiement',coach_dash:'Dashboard Coach',coach_messages:'Messagerie'};
+  const groups={login:'🔑',onboarding:'🔑',solo_dash:'💪 Solo',solo_seances:'💪 Solo',run_tracker:'💪 Solo',solo_nutri:'💪 Solo',solo_stats:'💪 Solo',find_coach:'💪 Solo',food_scan:'💪 Solo',subscription:'💪 Solo',payment:'💪 Solo',coach_dash:'👔 Coach',coach_messages:'👔 Coach'};
   document.getElementById('navLabel').textContent=labels[screen]||screen;
   document.getElementById('navBadge').textContent=groups[screen]||'🔑';
   render();
@@ -508,6 +521,11 @@ function render(){
         <button onclick="seancesView='new';render();" style="position:absolute;top:42px;right:20px;background:var(--c);border:none;color:#05111f;border-radius:8px;padding:6px 12px;font-weight:900;font-size:11px;cursor:pointer;">+ Nouvelle</button>
       </div>
       <div class="pb24 px20 mt12" style="display:flex;flex-direction:column;gap:10px;">
+        <div onclick="go('run_tracker');" style="background:linear-gradient(135deg,rgba(0,200,190,0.12),rgba(0,168,216,0.08));border:1px solid rgba(0,200,190,0.25);border-radius:16px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;">
+          <div style="width:48px;height:48px;border-radius:14px;background:rgba(0,200,190,0.2);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">🏃</div>
+          <div style="flex:1;"><div class="white f14 f900">Course à pied</div><div class="gray f11">GPS · Temps · Distance · Vitesse · Calories</div><div style="margin-top:4px;"><span style="background:rgba(0,200,190,0.15);color:var(--c);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:900;">📡 GPS live</span><span style="background:rgba(37,211,102,0.15);color:#25D366;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:900;margin-left:4px;">📤 Partage</span></div></div>
+          <div style="color:var(--c);font-size:22px;">›</div>
+        </div>
         <div class="card">
           <div class="white f12 f900 mb8">Cette semaine</div>
           <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">
@@ -904,6 +922,66 @@ function render(){
       </div>
     </div>`;
   }
+
+  else if(s==='run_tracker'){
+    const {speed,cal}=runCalc();
+    const stColor={idle:'rgba(255,255,255,0.4)',running:'#10B981',paused:'#F59E0B',finished:'#00C8BE'};
+    const stLabel={idle:'⬜ Prêt',running:'● En cours',paused:'⏸ Pause',finished:'✓ Terminé'};
+    sc.innerHTML=`<div class="screen" style="background:#05111f;">
+      <div style="background:linear-gradient(135deg,#05111f,#072d3d);padding:40px 20px 12px;">
+        <div onclick="if(runState!=='idle')stopRun();go('solo_seances');" style="color:rgba(255,255,255,0.5);font-size:12px;cursor:pointer;margin-bottom:8px;">← Séances</div>
+        <div class="sb"><div class="white f20 f900">🏃 Course à pied</div><div style="background:rgba(255,255,255,0.08);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:900;color:${stColor[runState]};">${stLabel[runState]}</div></div>
+      </div>
+      ${runState!=='idle'?`<div id="run-map" style="height:200px;background:#07192a;display:block;"></div>`:''}
+      <div style="padding:${runState==='idle'?'20px':'12px'} 20px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-bottom:24px;">
+      ${runState==='idle'?`
+        <div style="background:rgba(0,200,190,0.06);border:1px solid rgba(0,200,190,0.15);border-radius:16px;padding:20px;text-align:center;margin-top:8px;">
+          <div style="font-size:56px;margin-bottom:10px;">🏃</div>
+          <div class="white f16 f900 mb8">Tracker de course GPS</div>
+          <div class="gray f12 mb16">Tracé en temps réel · Stats auto · Partage social</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;text-align:left;">
+            ${[['📍','Tracé GPS','Route enregistrée'],['⏱','Chronomètre','Temps en direct'],['⚡','Vitesse','km/h calculée auto'],['🔥','Calories','Estimation ~65 kcal/km']].map(([ic,t,d])=>`<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px;"><div style="font-size:18px;margin-bottom:3px;">${ic}</div><div class="white f12 f900">${t}</div><div class="gray" style="font-size:10px;">${d}</div></div>`).join('')}
+          </div>
+          <button onclick="startRun();" style="background:var(--c);border:none;color:#05111f;border-radius:14px;padding:16px;font-weight:900;font-size:15px;cursor:pointer;width:100%;">🏃 Démarrer la course</button>
+        </div>
+      `:`
+        <div style="background:rgba(255,255,255,0.04);border-radius:14px;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          ${[['⏱','run-time',fmtTime(runSec),'Temps'],['📍','run-dist',runDist.toFixed(2)+' km','Distance'],['⚡','run-speed',speed.toFixed(1)+' km/h','Vitesse moy.'],['🔥','run-cal',cal+' kcal','Calories']].map(([ic,id,val,lbl])=>`<div style="background:rgba(0,200,190,0.06);border:1px solid rgba(0,200,190,0.1);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:18px;">${ic}</div><div id="${id}" style="color:var(--c);font-size:18px;font-weight:900;line-height:1.2;">${val}</div><div class="gray" style="font-size:10px;">${lbl}</div></div>`).join('')}
+        </div>
+        ${runState==='running'?`
+        <div style="display:flex;gap:8px;">
+          <button onclick="pauseRun();" style="flex:1;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:#F59E0B;border-radius:12px;padding:14px;font-weight:900;font-size:14px;cursor:pointer;">⏸ Pause</button>
+          <button onclick="stopRun();" style="flex:1;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#EF4444;border-radius:12px;padding:14px;font-weight:900;font-size:14px;cursor:pointer;">⏹ Terminer</button>
+        </div>
+        <div class="gray f11" style="text-align:center;">📡 GPS actif — tracé enregistré en temps réel</div>
+        `:runState==='paused'?`
+        <div style="display:flex;gap:8px;">
+          <button onclick="resumeRun();" style="flex:1;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#10B981;border-radius:12px;padding:14px;font-weight:900;font-size:14px;cursor:pointer;">▶ Reprendre</button>
+          <button onclick="stopRun();" style="flex:1;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#EF4444;border-radius:12px;padding:14px;font-weight:900;font-size:14px;cursor:pointer;">⏹ Terminer</button>
+        </div>
+        `:`
+        <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:14px;padding:14px;">
+          <div style="color:#10B981;font-size:13px;font-weight:900;margin-bottom:10px;">🎉 Course terminée !</div>
+          <div class="grid2" style="gap:8px;">
+            <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:8px;text-align:center;"><div style="color:var(--c);font-size:16px;font-weight:900;">${fmtTime(runSec)}</div><div class="gray f11">Durée</div></div>
+            <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:8px;text-align:center;"><div style="color:var(--c);font-size:16px;font-weight:900;">${runDist.toFixed(2)} km</div><div class="gray f11">Distance</div></div>
+            <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:8px;text-align:center;"><div style="color:var(--c);font-size:16px;font-weight:900;">${speed.toFixed(1)} km/h</div><div class="gray f11">Vitesse moy.</div></div>
+            <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:8px;text-align:center;"><div style="color:var(--c);font-size:16px;font-weight:900;">${cal} kcal</div><div class="gray f11">Calories</div></div>
+          </div>
+        </div>
+        <div class="white f13 f900">Partager ta performance 📤</div>
+        <button onclick="shareRun();" style="background:linear-gradient(135deg,var(--c),#4ECDC4);border:none;color:#05111f;border-radius:12px;padding:14px;font-weight:900;font-size:14px;cursor:pointer;width:100%;">📤 Partager ma course</button>
+        <div id="run-share-panel" style="display:none;flex-direction:column;gap:8px;">
+          <a id="run-wa-link" href="#" target="_blank" style="display:flex;align-items:center;gap:10px;background:rgba(37,211,102,0.12);border:1px solid rgba(37,211,102,0.25);border-radius:12px;padding:12px;text-decoration:none;"><div style="font-size:22px;">💬</div><div><div style="color:#25D366;font-weight:900;font-size:13px;">WhatsApp</div><div class="gray f11">Partager ma course</div></div></a>
+          <a id="run-tw-link" href="#" target="_blank" style="display:flex;align-items:center;gap:10px;background:rgba(29,161,242,0.12);border:1px solid rgba(29,161,242,0.25);border-radius:12px;padding:12px;text-decoration:none;"><div style="font-size:22px;">🐦</div><div><div style="color:#1DA1F2;font-weight:900;font-size:13px;">Twitter / X</div><div class="gray f11">Tweeter ma performance</div></div></a>
+        </div>
+        <button onclick="resetRun();" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:12px;padding:12px;font-weight:900;font-size:13px;cursor:pointer;width:100%;">🔄 Nouvelle course</button>
+        `}
+      `}
+      </div>
+    </div>`;
+    if(runState!=='idle')initRunMap();
+  }
 }
 
 function setOnbStep(n){onbStep=n;render();}
@@ -926,6 +1004,119 @@ function startScan(){
     else render();
   },80);
 }
+
+// ─── RUN TRACKER HELPERS ───────────────────────────────────────────────────
+function haversine(lat1,lng1,lat2,lng2){
+  const R=6371;const dLat=(lat2-lat1)*Math.PI/180;const dLng=(lng2-lng1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function fmtTime(s){const m=Math.floor(s/60);const ss=s%60;return String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');}
+function runCalc(){const speed=runSec>0?(runDist/(runSec/3600)):0;const cal=Math.round(runDist*65);return{speed,cal};}
+
+function initRunMap(){
+  setTimeout(()=>{
+    const mapEl=document.getElementById('run-map');
+    if(!mapEl)return;
+    mapEl.style.height='200px';
+    if(runMap2){try{runMap2.remove();}catch(e){}}
+    runMap2=L.map('run-map',{zoomControl:false,attributionControl:false});
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(runMap2);
+    runLine=L.polyline([],{color:'#00C8BE',weight:5,opacity:0.9}).addTo(runMap2);
+    if(runPoints.length>1){runLine.setLatLngs(runPoints);runMap2.fitBounds(runLine.getBounds(),{padding:[20,20]});}
+    else if(runPoints.length===1){runMap2.setView(runPoints[0],16);}
+    else{runMap2.setView([48.8566,2.3522],15);}
+  },100);
+}
+
+function addRunPoint(lat,lng){
+  if(runPoints.length>0){const p=runPoints[runPoints.length-1];runDist+=haversine(p[0],p[1],lat,lng);}
+  runPoints.push([lat,lng]);
+  if(runLine&&runMap2){runLine.setLatLngs(runPoints);runMap2.setView([lat,lng],16);}
+  updateRunStats();
+}
+
+function updateRunStats(){
+  const{speed,cal}=runCalc();
+  const updates={'run-time':fmtTime(runSec),'run-dist':runDist.toFixed(2)+' km','run-speed':speed.toFixed(1)+' km/h','run-cal':cal+' kcal'};
+  Object.entries(updates).forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
+}
+
+function startSimulation(){
+  if(runSimIv)return;
+  runSimIv=setInterval(()=>{
+    if(runState!=='running')return;
+    const prev=runPoints.length>0?runPoints[runPoints.length-1]:[48.8566,2.3522];
+    const[dlat,dlng]=RUN_SIM_DIRS[runSimStep%RUN_SIM_DIRS.length];
+    addRunPoint(prev[0]+dlat,prev[1]+dlng);
+    runSimStep++;
+  },3000);
+}
+
+function startRun(){
+  if(runMap2){try{runMap2.remove();}catch(e){}}runMap2=null;runLine=null;
+  runState='running';runSec=0;runDist=0;runPoints=[];runSimStep=0;
+  render();
+  runTimerIv=setInterval(()=>{runSec++;updateRunStats();},1000);
+  if(navigator.geolocation){
+    runWatchId=navigator.geolocation.watchPosition(
+      pos=>{addRunPoint(pos.coords.latitude,pos.coords.longitude);},
+      ()=>startSimulation(),
+      {enableHighAccuracy:true,maximumAge:2000,timeout:8000}
+    );
+    setTimeout(()=>{if(runPoints.length===0)startSimulation();},5000);
+  } else {
+    startSimulation();
+  }
+}
+
+function pauseRun(){
+  runState='paused';
+  clearInterval(runTimerIv);runTimerIv=null;
+  render();
+}
+
+function resumeRun(){
+  runState='running';
+  runTimerIv=setInterval(()=>{runSec++;updateRunStats();},1000);
+  if(!runSimIv&&runWatchId==null)startSimulation();
+  render();
+}
+
+function stopRun(){
+  runState='finished';
+  clearInterval(runTimerIv);clearInterval(runSimIv);
+  runTimerIv=null;runSimIv=null;
+  if(runWatchId!=null){navigator.geolocation.clearWatch(runWatchId);runWatchId=null;}
+  render();
+}
+
+function resetRun(){
+  runState='idle';runSec=0;runDist=0;runPoints=[];runSimStep=0;
+  clearInterval(runTimerIv);clearInterval(runSimIv);
+  runTimerIv=null;runSimIv=null;
+  if(runWatchId!=null){navigator.geolocation.clearWatch(runWatchId);runWatchId=null;}
+  if(runMap2){try{runMap2.remove();}catch(e){}}runMap2=null;runLine=null;
+  render();
+}
+
+function shareRun(){
+  const{speed,cal}=runCalc();
+  const text='🏃 Ma course M.C.P !\n⏱ '+fmtTime(runSec)+' | 📍 '+runDist.toFixed(2)+' km | ⚡ '+speed.toFixed(1)+' km/h | 🔥 '+cal+' kcal\n#MCP #Running #Fitness #MonCoachPersonnel';
+  if(navigator.share){navigator.share({title:'Ma course M.C.P',text}).catch(()=>showShareLinks(text));}
+  else showShareLinks(text);
+}
+
+function showShareLinks(text){
+  const enc=encodeURIComponent(text);
+  const panel=document.getElementById('run-share-panel');
+  const wa=document.getElementById('run-wa-link');
+  const tw=document.getElementById('run-tw-link');
+  if(panel){panel.style.display='flex';}
+  if(wa)wa.href='https://wa.me/?text='+enc;
+  if(tw)tw.href='https://twitter.com/intent/tweet?text='+enc;
+}
+// ───────────────────────────────────────────────────────────────────────────
 
 go('login');
 </script>
