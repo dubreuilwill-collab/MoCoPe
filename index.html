@@ -6,6 +6,8 @@
 #run-map{height:200px;overflow:hidden;}
 .leaflet-container{background:#07192a;}
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif;}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+input[type=number]{-moz-appearance:textfield;}
 :root{--c:#00C8BE;--c2:#4ECDC4;--bg0:#05111f;--bg1:#07192a;--bg2:#0a3d52;--bg3:#072d3d;--card:rgba(255,255,255,0.06);--bord:rgba(0,200,190,0.15);--nav:#050f1a;--navbord:rgba(0,200,190,0.15);}
 body{background:transparent;}
 .app-wrap{display:flex;flex-direction:column;align-items:center;padding:24px 16px;background:linear-gradient(135deg,var(--bg0),var(--bg3),var(--bg2));min-height:100vh;}
@@ -130,6 +132,7 @@ input::placeholder{color:rgba(255,255,255,0.3);}
 let currentScreen = 'login';
 let menuOpen = false;
 let currentLang = 'fr';
+let _shareText = '';
 
 const TRANS = {
   fr:{
@@ -161,6 +164,7 @@ const TRANS = {
     run_tip:'📡 GPS actif — tracé enregistré en temps réel',
     timer_done:'Activité terminée !', timer_laps_label:'longueurs · appuie +1',
     timer_share:'📤 Partager mon activité', timer_validate:'✓ Valider l\'activité',
+    share_title:'Partager sur', share_copy:'📋 Copier le texte', share_native:'↗ Partager via…', share_insta_toast:'📸 Texte copié ! Colle-le dans ta story Instagram',
     nutri_title:'Nutrition', nutri_scan:'📷 Scanner',
     nutri_track:'📊 Suivi', nutri_ideas:'🍽️ Idées', nutri_chrono:'⏰ Chrono',
     nutri_cal:'Calories 🔥', nutri_taken:'prises', nutri_goal:'objectif',
@@ -206,6 +210,7 @@ const TRANS = {
     run_tip:'📡 GPS active — route recorded in real time',
     timer_done:'Activity Complete!', timer_laps_label:'lengths · tap +1',
     timer_share:'📤 Share my activity', timer_validate:"✓ Validate activity",
+    share_title:'Share on', share_copy:'📋 Copy text', share_native:'↗ Share via…', share_insta_toast:'📸 Text copied! Paste it in your Instagram story',
     nutri_title:'Nutrition', nutri_scan:'📷 Scan',
     nutri_track:'📊 Track', nutri_ideas:'🍽️ Ideas', nutri_chrono:'⏰ Chrono',
     nutri_cal:'Calories 🔥', nutri_taken:'consumed', nutri_goal:'goal',
@@ -251,6 +256,7 @@ const TRANS = {
     run_tip:'📡 GPS activo — ruta grabada en tiempo real',
     timer_done:'¡Actividad completada!', timer_laps_label:'largos · toca +1',
     timer_share:'📤 Compartir actividad', timer_validate:'✓ Validar actividad',
+    share_title:'Compartir en', share_copy:'📋 Copiar texto', share_native:'↗ Compartir vía…', share_insta_toast:'📸 ¡Texto copiado! Pégalo en tu historia de Instagram',
     nutri_title:'Nutrición', nutri_scan:'📷 Escanear',
     nutri_track:'📊 Seguim.', nutri_ideas:'🍽️ Ideas', nutri_chrono:'⏰ Crono',
     nutri_cal:'Calorías 🔥', nutri_taken:'consumidas', nutri_goal:'objetivo',
@@ -579,7 +585,7 @@ function render(){
       </div>`,
       `<div style="flex:1;padding:16px 20px 12px;overflow-y:auto;">
         <div class="white f16 f900 mb8">Ton profil</div>
-        <div class="gray f11 mb12">Étape 1/4 — Glisse pour ajuster</div>
+        <div class="gray f11 mb12">Étape 1/4 — Saisis tes informations</div>
         <div style="background:var(--card);border:1px solid var(--bord);border-radius:14px;padding:14px;margin-bottom:10px;">
           <div class="gray f11 f900 mb8" style="text-transform:uppercase;letter-spacing:.06em;">Sexe biologique</div>
           <div class="grid2" style="gap:8px;">
@@ -590,22 +596,35 @@ function render(){
           </div>
         </div>
         <div style="background:var(--card);border:1px solid var(--bord);border-radius:14px;padding:14px;margin-bottom:10px;">
-          <div style="display:flex;justify-content:space-around;align-items:center;">
-            ${[['taille','Taille',140,220,' cm'],['poids','Poids',30,200,' kg']].map(([k,l,min,max,u])=>`
-            <div style="text-align:center;">
-              <div class="gray f11 f900" style="text-transform:uppercase;margin-bottom:6px;">${l}</div>
-              <button onclick="setOnbForm('${k}',Math.max(${min},onbForm.${k}-1))" style="background:rgba(255,255,255,0.08);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;">−</button>
-              <div style="color:var(--c);font-weight:900;font-size:18px;margin:4px 0;">${onbForm[k]}${u}</div>
-              <button onclick="setOnbForm('${k}',Math.min(${max},onbForm.${k}+1))" style="background:var(--c);border:none;color:#05111f;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;">+</button>
-            </div>`).join('<div style="width:1px;height:80px;background:rgba(255,255,255,0.1);"></div>')}
-            <div style="width:1px;height:80px;background:rgba(255,255,255,0.1);"></div>
-            <div style="text-align:center;">
-              <div class="gray f11 f900" style="text-transform:uppercase;margin-bottom:6px;">Âge</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+            <div>
+              <div class="gray f11 f900 mb6" style="text-transform:uppercase;letter-spacing:.06em;">Taille</div>
+              <div style="position:relative;">
+                <input type="number" inputmode="numeric" min="100" max="250" value="${onbForm.taille}"
+                  oninput="const v=parseInt(this.value);if(!isNaN(v)&&v>=100&&v<=250){setOnbForm('taille',v);}"
+                  style="width:100%;background:rgba(0,200,190,0.08);border:1.5px solid rgba(0,200,190,0.3);border-radius:10px;padding:10px 30px 10px 10px;color:var(--c);font-size:20px;font-weight:900;outline:none;text-align:center;-moz-appearance:textfield;"/>
+                <span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.35);font-size:11px;font-weight:700;pointer-events:none;">cm</span>
+              </div>
+            </div>
+            <div>
+              <div class="gray f11 f900 mb6" style="text-transform:uppercase;letter-spacing:.06em;">Poids</div>
+              <div style="position:relative;">
+                <input type="number" inputmode="numeric" min="30" max="300" value="${onbForm.poids}"
+                  oninput="const v=parseInt(this.value);if(!isNaN(v)&&v>=30&&v<=300){setOnbForm('poids',v);}"
+                  style="width:100%;background:rgba(0,200,190,0.08);border:1.5px solid rgba(0,200,190,0.3);border-radius:10px;padding:10px 28px 10px 10px;color:var(--c);font-size:20px;font-weight:900;outline:none;text-align:center;-moz-appearance:textfield;"/>
+                <span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.35);font-size:11px;font-weight:700;pointer-events:none;">kg</span>
+              </div>
+            </div>
+            <div>
+              <div class="gray f11 f900 mb6" style="text-transform:uppercase;letter-spacing:.06em;">Âge</div>
               ${onbForm.birthday
-                ? `<div style="color:var(--c);font-weight:900;font-size:18px;margin:4px 0;">${calcAge()} ans</div><div class="gray" style="font-size:9px;">auto 🎂</div>`
-                : `<button onclick="setOnbForm('age',Math.max(15,onbForm.age-1))" style="background:rgba(255,255,255,0.08);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;">−</button>
-                   <div style="color:var(--c);font-weight:900;font-size:18px;margin:4px 0;">${onbForm.age} ans</div>
-                   <button onclick="setOnbForm('age',Math.min(90,onbForm.age+1))" style="background:var(--c);border:none;color:#05111f;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;">+</button>`
+                ? `<div style="background:rgba(168,85,247,0.1);border:1.5px solid rgba(168,85,247,0.3);border-radius:10px;padding:10px 6px;text-align:center;"><div style="color:#C084FC;font-size:20px;font-weight:900;">${calcAge()}</div><div class="gray" style="font-size:9px;margin-top:2px;">auto 🎂</div></div>`
+                : `<div style="position:relative;">
+                    <input type="number" inputmode="numeric" min="10" max="100" value="${onbForm.age}"
+                      oninput="const v=parseInt(this.value);if(!isNaN(v)&&v>=10&&v<=100){setOnbForm('age',v);}"
+                      style="width:100%;background:rgba(0,200,190,0.08);border:1.5px solid rgba(0,200,190,0.3);border-radius:10px;padding:10px 28px 10px 10px;color:var(--c);font-size:20px;font-weight:900;outline:none;text-align:center;-moz-appearance:textfield;"/>
+                    <span style="position:absolute;right:6px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.35);font-size:10px;font-weight:700;pointer-events:none;">ans</span>
+                  </div>`
               }
             </div>
           </div>
@@ -1378,10 +1397,6 @@ function render(){
         </div>
         <div class="white f13 f900">Partager ta performance 📤</div>
         <button onclick="shareRun();" style="background:linear-gradient(135deg,var(--c),#4ECDC4);border:none;color:#05111f;border-radius:12px;padding:14px;font-weight:900;font-size:14px;cursor:pointer;width:100%;">${t('run_share')}</button>
-        <div id="run-share-panel" style="display:none;flex-direction:column;gap:8px;">
-          <a id="run-wa-link" href="#" target="_blank" style="display:flex;align-items:center;gap:10px;background:rgba(37,211,102,0.12);border:1px solid rgba(37,211,102,0.25);border-radius:12px;padding:12px;text-decoration:none;"><div style="font-size:22px;">💬</div><div><div style="color:#25D366;font-weight:900;font-size:13px;">WhatsApp</div><div class="gray f11">Partager ma course</div></div></a>
-          <a id="run-tw-link" href="#" target="_blank" style="display:flex;align-items:center;gap:10px;background:rgba(29,161,242,0.12);border:1px solid rgba(29,161,242,0.25);border-radius:12px;padding:12px;text-decoration:none;"><div style="font-size:22px;">🐦</div><div><div style="color:#1DA1F2;font-weight:900;font-size:13px;">Twitter / X</div><div class="gray f11">Tweeter ma performance</div></div></a>
-        </div>
         <button onclick="resetRun();" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:12px;padding:12px;font-weight:900;font-size:13px;cursor:pointer;width:100%;">${t('run_new')}</button>
         `}
       `}
@@ -1588,19 +1603,107 @@ function resetRun(){
 
 function shareRun(){
   const{speed,cal}=runCalc();
-  const text=currentActivity.icon+' '+currentActivity.name+' M.C.P !\n⏱ '+fmtTime(runSec)+' | 📍 '+runDist.toFixed(2)+' km | ⚡ '+speed.toFixed(1)+' km/h | 🔥 '+cal+' kcal\n#MCP #Fitness #MonCoachPersonnel';
-  if(navigator.share){navigator.share({title:'Mon activité M.C.P',text}).catch(()=>showShareLinks(text));}
-  else showShareLinks(text);
+  const text=currentActivity.icon+' '+currentActivity.name+' avec M.C.P !\n⏱ '+fmtTime(runSec)+' | 📍 '+runDist.toFixed(2)+' km | ⚡ '+speed.toFixed(1)+' km/h | 🔥 '+cal+' kcal\n#MCP #Fitness #MonCoachPersonnel';
+  showSharePanel(text);
 }
 
-function showShareLinks(text){
-  const enc=encodeURIComponent(text);
-  const panel=document.getElementById('run-share-panel');
-  const wa=document.getElementById('run-wa-link');
-  const tw=document.getElementById('run-tw-link');
-  if(panel){panel.style.display='flex';}
-  if(wa)wa.href='https://wa.me/?text='+enc;
-  if(tw)tw.href='https://twitter.com/intent/tweet?text='+enc;
+function showSharePanel(text){
+  _shareText = text;
+  const enc = encodeURIComponent(text);
+  const old = document.getElementById('mcp-share-overlay');
+  if(old) old.remove();
+  const APP_URL = encodeURIComponent('https://mcp-fitness.netlify.app');
+  const networks = [
+    {id:'wa',  color:'#25D366', bg:'rgba(37,211,102,0.12)',  border:'rgba(37,211,102,0.3)',  icon:'💬', label:'WhatsApp',    sub:'Envoyer via WhatsApp',
+     url:'https://wa.me/?text='+enc},
+    {id:'x',   color:'#e7e9ea', bg:'rgba(231,233,234,0.08)', border:'rgba(231,233,234,0.2)', icon:'𝕏',  label:'X / Twitter', sub:'Tweeter ma perfo',
+     url:'https://twitter.com/intent/tweet?text='+enc},
+    {id:'fb',  color:'#1877F2', bg:'rgba(24,119,242,0.12)',  border:'rgba(24,119,242,0.3)',  icon:'📘', label:'Facebook',    sub:'Partager sur Facebook',
+     url:'https://www.facebook.com/sharer/sharer.php?u='+APP_URL+'&quote='+enc},
+    {id:'msn', color:'#0084FF', bg:'rgba(0,132,255,0.12)',   border:'rgba(0,132,255,0.3)',   icon:'💙', label:'Messenger',   sub:'Envoyer via Messenger',
+     url:'fb-messenger://share/?link='+APP_URL},
+    {id:'ig',  color:'#E1306C', bg:'rgba(225,48,108,0.12)',  border:'rgba(225,48,108,0.3)',  icon:'📸', label:'Instagram',   sub:'Copier + ouvrir Instagram',
+     url:null},
+  ];
+  const overlay = document.createElement('div');
+  overlay.id = 'mcp-share-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;justify-content:flex-end;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);';
+  const sheet = document.createElement('div');
+  sheet.id = 'mcp-share-sheet';
+  sheet.style.cssText = 'background:#0d1f2d;border-radius:24px 24px 0 0;padding:20px 20px 36px;max-height:92vh;overflow-y:auto;';
+  // Title
+  const titleBar = document.createElement('div');
+  titleBar.style.cssText = 'width:40px;height:4px;background:rgba(255,255,255,0.2);border-radius:4px;margin:0 auto 20px;';
+  sheet.appendChild(titleBar);
+  const titleEl = document.createElement('div');
+  titleEl.style.cssText = 'color:white;font-weight:900;font-size:16px;margin-bottom:16px;text-align:center;';
+  titleEl.textContent = t('share_title') + ' 🌐';
+  sheet.appendChild(titleEl);
+  // Network rows
+  const list = document.createElement('div');
+  list.style.cssText = 'display:flex;flex-direction:column;gap:9px;';
+  networks.forEach(n => {
+    const row = document.createElement('a');
+    row.style.cssText = `display:flex;align-items:center;gap:12px;background:${n.bg};border:1.5px solid ${n.border};border-radius:14px;padding:13px 16px;text-decoration:none;cursor:pointer;`;
+    row.innerHTML = `<div style="font-size:24px;width:32px;text-align:center;">${n.icon}</div><div style="flex:1;"><div style="color:${n.color};font-weight:900;font-size:14px;">${n.label}</div><div style="color:rgba(255,255,255,0.4);font-size:11px;">${n.sub}</div></div><div style="color:rgba(255,255,255,0.2);font-size:16px;">›</div>`;
+    if(n.id === 'ig'){
+      row.href = '#';
+      row.addEventListener('click', e => { e.preventDefault(); shareInsta(); });
+    } else {
+      row.href = n.url;
+      row.target = '_blank';
+      row.rel = 'noopener';
+    }
+    list.appendChild(row);
+  });
+  sheet.appendChild(list);
+  // Bottom buttons
+  const btnsRow = document.createElement('div');
+  btnsRow.style.cssText = 'display:flex;gap:8px;margin-top:12px;';
+  const copyBtn = document.createElement('button');
+  copyBtn.style.cssText = 'flex:1;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.8);border-radius:12px;padding:12px;font-weight:900;font-size:12px;cursor:pointer;';
+  copyBtn.textContent = t('share_copy');
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(_shareText).catch(() => {
+      const ta=document.createElement('textarea');ta.value=_shareText;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    });
+    const orig = copyBtn.textContent; copyBtn.textContent = '✓ Copié !'; copyBtn.style.color = '#00C8BE';
+    setTimeout(() => { copyBtn.textContent = orig; copyBtn.style.color = ''; }, 2000);
+  });
+  btnsRow.appendChild(copyBtn);
+  if(navigator.share){
+    const natBtn = document.createElement('button');
+    natBtn.style.cssText = 'flex:1;background:rgba(0,200,190,0.12);border:1.5px solid rgba(0,200,190,0.3);color:#00C8BE;border-radius:12px;padding:12px;font-weight:900;font-size:12px;cursor:pointer;';
+    natBtn.textContent = t('share_native');
+    natBtn.addEventListener('click', () => { navigator.share({title:'Mon activité M.C.P', text:_shareText}).catch(()=>{}); });
+    btnsRow.appendChild(natBtn);
+  }
+  sheet.appendChild(btnsRow);
+  // Close button
+  const closeBtn = document.createElement('button');
+  closeBtn.style.cssText = 'width:100%;margin-top:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:12px;padding:12px;font-weight:700;font-size:13px;cursor:pointer;';
+  closeBtn.textContent = '✕ Fermer';
+  closeBtn.addEventListener('click', () => overlay.remove());
+  sheet.appendChild(closeBtn);
+  overlay.appendChild(sheet);
+  overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+  // Slide-up animation
+  sheet.style.transform = 'translateY(100%)';
+  sheet.style.transition = 'transform 0.3s cubic-bezier(.4,0,.2,1)';
+  requestAnimationFrame(() => { requestAnimationFrame(() => { sheet.style.transform = 'translateY(0)'; }); });
+}
+
+function shareInsta(){
+  navigator.clipboard.writeText(_shareText).catch(() => {
+    const ta=document.createElement('textarea');ta.value=_shareText;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+  });
+  const toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;bottom:140px;left:50%;transform:translateX(-50%);background:#E1306C;color:white;padding:12px 20px;border-radius:14px;font-weight:900;font-size:13px;z-index:10000;box-shadow:0 8px 24px rgba(0,0,0,0.4);white-space:nowrap;';
+  toast.textContent = t('share_insta_toast');
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.style.opacity='0'; toast.style.transition='opacity 0.4s'; setTimeout(() => toast.remove(), 400); }, 3000);
+  setTimeout(() => window.open('https://www.instagram.com', '_blank'), 500);
 }
 // ───────────────────────────────────────────────────────────────────────────
 
@@ -1769,8 +1872,7 @@ function shareActivity(){
   const calBurned=Math.round(actTimerSec*(currentActivity.calPer/60)*(onbForm.poids/70));
   const lapTxt=currentActivity.id==='swim'?' | 🏊 '+actLaps+' longueurs':'';
   const text=currentActivity.icon+' '+currentActivity.name+' avec M.C.P !\n⏱ '+fmtTime(actTimerSec)+lapTxt+' | 🔥 '+calBurned+' kcal\n#MCP #Fitness #MonCoachPersonnel';
-  if(navigator.share){navigator.share({title:'Mon activité M.C.P',text}).catch(()=>{});}
-  else{const enc=encodeURIComponent(text);window.open('https://wa.me/?text='+enc,'_blank');}
+  showSharePanel(text);
 }
 // ────────────────────────────────────────────────────────────────────────────
 
