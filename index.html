@@ -79,7 +79,7 @@ input::placeholder{color:rgba(255,255,255,0.3);}
 
 <div class="app-wrap">
   <div class="app-title">🏋️ M.C.P</div>
-  <div class="app-sub">Mon Coach Personnel</div>
+  <div class="app-sub" id="appSub">Mon Coach Personnel</div>
 
   <div class="nav-select" id="navSelect">
     <button class="nav-btn" onclick="toggleMenu()">
@@ -90,10 +90,10 @@ input::placeholder{color:rgba(255,255,255,0.3);}
       <span id="navArrow">▼</span>
     </button>
     <div class="nav-dropdown" id="navDropdown" style="display:none;">
-      <div class="nav-group-label">CONNEXION</div>
+      <div class="nav-group-label" id="nav-grp-login">CONNEXION</div>
       <button class="nav-item active" id="item-login" onclick="go('login')">🔐 Connexion</button>
       <button class="nav-item" id="item-onboarding" onclick="go('onboarding')">🎯 Onboarding</button>
-      <div class="nav-group-label">💪 SPORTIF SOLO</div>
+      <div class="nav-group-label" id="nav-grp-solo">💪 SPORTIF SOLO</div>
       <button class="nav-item" id="item-solo_dash" onclick="go('solo_dash')">Dashboard Solo</button>
       <button class="nav-item" id="item-solo_seances" onclick="go('solo_seances')">Mes Séances</button>
       <button class="nav-item" id="item-activity_picker" onclick="go('activity_picker')">🏃 Activités</button>
@@ -129,6 +129,146 @@ input::placeholder{color:rgba(255,255,255,0.3);}
 <script>
 let currentScreen = 'login';
 let menuOpen = false;
+let currentLang = 'fr';
+
+const TRANS = {
+  fr:{
+    app_sub:'Mon Coach Personnel',
+    nav_login:'🔐 Connexion', nav_onboarding:'🎯 Onboarding', nav_dashboard:'Dashboard Solo',
+    nav_seances:'Mes Séances', nav_activities:'🏃 Activités', nav_gps:'📡 GPS Tracker',
+    nav_timer:'⏱ Timer activité', nav_seance_timer:'⏱ Séance en cours',
+    nav_nutri:'Nutrition', nav_stats:'Stats & Badges', nav_coach:'🔍 Trouver un Coach',
+    nav_scanner:'📷 Scanner', nav_sub:'💳 Abonnement', nav_pay:'💰 Paiement',
+    nav_coach_dash:'Dashboard Coach', nav_coach_msg:'Messagerie',
+    lang_label:'Langue', lang_fr:'🇫🇷 Français', lang_en:'🇬🇧 English', lang_es:'🇪🇸 Español',
+    login_btn:'Se connecter', login_coach:'Connexion Coach 👔', login_register:"Pas de compte ? S'inscrire",
+    onb_mode_title:'Comment utiliser M.C.P ?', onb_mode_sub:'Tu pourras changer à tout moment',
+    onb_solo:'Mode Solo', onb_solo_desc:'Je gère mes séances et ma nutrition',
+    onb_coach:'Mode Coach', onb_coach_desc:'Je cherche un coach certifié',
+    back:'←', save:'Sauvegarder', next:'Suivant →', start:'Démarrer',
+    pause:'⏸ Pause', resume:'▶ Reprendre', stop:'⏹ Terminer',
+    share:'📤 Partager', validate:'✓ Valider', new_act:'🔄 Nouvelle activité',
+    dash_hello:'Bonjour 💪', dash_seances:'Séances', dash_streak:'Streak', dash_goal:'Objectif',
+    dash_weight:'Poids du jour ⚖️', dash_last_act:'Dernière activité',
+    dash_find_coach:'Trouver un coach', dash_coaches:'4 coachs disponibles',
+    dash_badges:'Badges 🏅', dash_see_all:'Voir tout', dash_seance_today:'Séance du jour', dash_today:"Aujourd'hui",
+    dash_start:'Commencer →',
+    seances_title:'Mes Séances', seances_new:'+ Nouvelle', seances_week:'Cette semaine',
+    seances_act_title:'Activités sportives', seances_act_desc:'Course · Vélo · Marche · Yoga · Natation · HIIT...',
+    act_title:'Nouvelle activité', act_sub:'Choisis ton sport du jour 🏅', act_gps:'📡 GPS', act_timer:'⏱ Timer',
+    run_ready:'⬜ Prêt', run_running:'● En cours', run_paused:'⏸ Pause', run_done:'✓ Terminé',
+    run_hist:'📋 Historique GPS', run_share:'📤 Partager ma course', run_new:'🔄 Nouvelle course',
+    run_tip:'📡 GPS actif — tracé enregistré en temps réel',
+    timer_done:'Activité terminée !', timer_laps_label:'longueurs · appuie +1',
+    timer_share:'📤 Partager mon activité', timer_validate:'✓ Valider l\'activité',
+    nutri_title:'Nutrition', nutri_scan:'📷 Scanner',
+    nutri_track:'📊 Suivi', nutri_ideas:'🍽️ Idées', nutri_chrono:'⏰ Chrono',
+    nutri_cal:'Calories 🔥', nutri_taken:'prises', nutri_goal:'objectif',
+    nutri_surplus:'excédent', nutri_remain:'restantes',
+    nutri_hydra:'Hydratation 💧', nutri_meals:'Repas du jour',
+    stats_title:'Stats & Badges', stats_xp:'XP total',
+    stats_unlocked:'Badges débloqués', stats_tab_b:'🏅 Badges', stats_tab_s:'📊 Stats',
+    coach_title:'Trouver un Coach', coach_nearby:'4 coachs disponibles près de toi 📍',
+    coach_list:'📋 Liste', coach_map:'🗺️ Carte',
+    coach_avail:'Disponible', coach_unavail:'Indisponible',
+    st_sets:'séries', st_exercise:'Exercice', st_reps:'reps', st_remain:'séries restantes',
+    st_done_set:'✓ Série terminée', st_rest_title:'Repos — prépare-toi pour',
+    st_skip:'Passer le repos →', st_done_title:'Séance terminée !', st_validate:'✓ Valider la séance',
+    st_return:'Retour aux séances',
+    tab_home:'Accueil', tab_seances:'Séances', tab_nutri:'Nutrition', tab_stats:'Stats', tab_coach:'Coach',
+  },
+  en:{
+    app_sub:'My Personal Coach',
+    nav_login:'🔐 Login', nav_onboarding:'🎯 Setup', nav_dashboard:'Solo Dashboard',
+    nav_seances:'My Workouts', nav_activities:'🏃 Activities', nav_gps:'📡 GPS Tracker',
+    nav_timer:'⏱ Activity Timer', nav_seance_timer:'⏱ Session running',
+    nav_nutri:'Nutrition', nav_stats:'Stats & Badges', nav_coach:'🔍 Find a Coach',
+    nav_scanner:'📷 Scanner', nav_sub:'💳 Subscription', nav_pay:'💰 Payment',
+    nav_coach_dash:'Coach Dashboard', nav_coach_msg:'Messages',
+    lang_label:'Language', lang_fr:'🇫🇷 Français', lang_en:'🇬🇧 English', lang_es:'🇪🇸 Español',
+    login_btn:'Sign in', login_coach:'Coach Login 👔', login_register:"No account? Sign up",
+    onb_mode_title:'How to use M.C.P?', onb_mode_sub:'You can change this at any time',
+    onb_solo:'Solo Mode', onb_solo_desc:'I manage my own workouts & nutrition',
+    onb_coach:'Coach Mode', onb_coach_desc:"I'm looking for a certified coach",
+    back:'←', save:'Save', next:'Next →', start:'Start',
+    pause:'⏸ Pause', resume:'▶ Resume', stop:'⏹ Finish',
+    share:'📤 Share', validate:'✓ Validate', new_act:'🔄 New Activity',
+    dash_hello:'Hello 💪', dash_seances:'Workouts', dash_streak:'Streak', dash_goal:'Goal',
+    dash_weight:"Today's Weight ⚖️", dash_last_act:'Last Activity',
+    dash_find_coach:'Find a coach', dash_coaches:'4 coaches nearby',
+    dash_badges:'Badges 🏅', dash_see_all:'See all', dash_seance_today:"Today's Workout", dash_today:'Today',
+    dash_start:'Start →',
+    seances_title:'My Workouts', seances_new:'+ New', seances_week:'This Week',
+    seances_act_title:'Sport Activities', seances_act_desc:'Run · Bike · Walk · Yoga · Swim · HIIT...',
+    act_title:'New Activity', act_sub:'Choose your sport 🏅', act_gps:'📡 GPS', act_timer:'⏱ Timer',
+    run_ready:'⬜ Ready', run_running:'● Active', run_paused:'⏸ Paused', run_done:'✓ Done',
+    run_hist:'📋 GPS History', run_share:'📤 Share my run', run_new:'🔄 New run',
+    run_tip:'📡 GPS active — route recorded in real time',
+    timer_done:'Activity Complete!', timer_laps_label:'lengths · tap +1',
+    timer_share:'📤 Share my activity', timer_validate:"✓ Validate activity",
+    nutri_title:'Nutrition', nutri_scan:'📷 Scan',
+    nutri_track:'📊 Track', nutri_ideas:'🍽️ Ideas', nutri_chrono:'⏰ Chrono',
+    nutri_cal:'Calories 🔥', nutri_taken:'consumed', nutri_goal:'goal',
+    nutri_surplus:'surplus', nutri_remain:'remaining',
+    nutri_hydra:'Hydration 💧', nutri_meals:"Today's Meals",
+    stats_title:'Stats & Badges', stats_xp:'Total XP',
+    stats_unlocked:'Badges Unlocked', stats_tab_b:'🏅 Badges', stats_tab_s:'📊 Stats',
+    coach_title:'Find a Coach', coach_nearby:'4 coaches available near you 📍',
+    coach_list:'📋 List', coach_map:'🗺️ Map',
+    coach_avail:'Available', coach_unavail:'Unavailable',
+    st_sets:'sets', st_exercise:'Exercise', st_reps:'reps', st_remain:'sets remaining',
+    st_done_set:'✓ Set Done', st_rest_title:'Rest — get ready for',
+    st_skip:'Skip rest →', st_done_title:'Workout Complete!', st_validate:'✓ Complete Workout',
+    st_return:'Back to workouts',
+    tab_home:'Home', tab_seances:'Workouts', tab_nutri:'Nutrition', tab_stats:'Stats', tab_coach:'Coach',
+  },
+  es:{
+    app_sub:'Mi Entrenador Personal',
+    nav_login:'🔐 Iniciar sesión', nav_onboarding:'🎯 Configuración', nav_dashboard:'Panel Solo',
+    nav_seances:'Mis Entrenam.', nav_activities:'🏃 Actividades', nav_gps:'📡 GPS Tracker',
+    nav_timer:'⏱ Temporizador', nav_seance_timer:'⏱ Sesión activa',
+    nav_nutri:'Nutrición', nav_stats:'Stats & Badges', nav_coach:'🔍 Buscar Coach',
+    nav_scanner:'📷 Escáner', nav_sub:'💳 Suscripción', nav_pay:'💰 Pago',
+    nav_coach_dash:'Panel Coach', nav_coach_msg:'Mensajes',
+    lang_label:'Idioma', lang_fr:'🇫🇷 Français', lang_en:'🇬🇧 English', lang_es:'🇪🇸 Español',
+    login_btn:'Iniciar sesión', login_coach:'Acceso Coach 👔', login_register:'¿Sin cuenta? Regístrate',
+    onb_mode_title:'¿Cómo usar M.C.P?', onb_mode_sub:'Podrás cambiarlo en cualquier momento',
+    onb_solo:'Modo Solo', onb_solo_desc:'Gestiono mis entrenamientos y nutrición',
+    onb_coach:'Modo Coach', onb_coach_desc:'Busco un coach certificado',
+    back:'←', save:'Guardar', next:'Siguiente →', start:'Empezar',
+    pause:'⏸ Pausa', resume:'▶ Continuar', stop:'⏹ Terminar',
+    share:'📤 Compartir', validate:'✓ Validar', new_act:'🔄 Nueva actividad',
+    dash_hello:'¡Hola 💪', dash_seances:'Entrenam.', dash_streak:'Racha', dash_goal:'Objetivo',
+    dash_weight:'Peso de hoy ⚖️', dash_last_act:'Última actividad',
+    dash_find_coach:'Buscar coach', dash_coaches:'4 coaches disponibles',
+    dash_badges:'Insignias 🏅', dash_see_all:'Ver todo', dash_seance_today:'Entren. de hoy', dash_today:'Hoy',
+    dash_start:'Empezar →',
+    seances_title:'Mis Entrenam.', seances_new:'+ Nuevo', seances_week:'Esta semana',
+    seances_act_title:'Actividades deportivas', seances_act_desc:'Correr · Bici · Caminar · Yoga · Natación · HIIT...',
+    act_title:'Nueva actividad', act_sub:'Elige tu deporte 🏅', act_gps:'📡 GPS', act_timer:'⏱ Timer',
+    run_ready:'⬜ Listo', run_running:'● En curso', run_paused:'⏸ Pausa', run_done:'✓ Terminado',
+    run_hist:'📋 Historial GPS', run_share:'📤 Compartir carrera', run_new:'🔄 Nueva carrera',
+    run_tip:'📡 GPS activo — ruta grabada en tiempo real',
+    timer_done:'¡Actividad completada!', timer_laps_label:'largos · toca +1',
+    timer_share:'📤 Compartir actividad', timer_validate:'✓ Validar actividad',
+    nutri_title:'Nutrición', nutri_scan:'📷 Escanear',
+    nutri_track:'📊 Seguim.', nutri_ideas:'🍽️ Ideas', nutri_chrono:'⏰ Crono',
+    nutri_cal:'Calorías 🔥', nutri_taken:'consumidas', nutri_goal:'objetivo',
+    nutri_surplus:'excedente', nutri_remain:'restantes',
+    nutri_hydra:'Hidratación 💧', nutri_meals:'Comidas de hoy',
+    stats_title:'Stats & Badges', stats_xp:'XP total',
+    stats_unlocked:'Insignias desbloqueadas', stats_tab_b:'🏅 Insignias', stats_tab_s:'📊 Stats',
+    coach_title:'Buscar un Coach', coach_nearby:'4 coaches disponibles cerca 📍',
+    coach_list:'📋 Lista', coach_map:'🗺️ Mapa',
+    coach_avail:'Disponible', coach_unavail:'No disponible',
+    st_sets:'series', st_exercise:'Ejercicio', st_reps:'reps', st_remain:'series restantes',
+    st_done_set:'✓ Serie hecha', st_rest_title:'Descanso — prepárate para',
+    st_skip:'Saltar descanso →', st_done_title:'¡Entren. completado!', st_validate:'✓ Completar entren.',
+    st_return:'Volver a entrenam.',
+    tab_home:'Inicio', tab_seances:'Entrenam.', tab_nutri:'Nutrición', tab_stats:'Stats', tab_coach:'Coach',
+  }
+};
+function t(k){return(TRANS[currentLang]&&TRANS[currentLang][k])||TRANS.fr[k]||k;}
 let coachView = 'liste'; // 'liste' ou 'carte'
 let coachMap = null;
 let onbStep = 0;
@@ -375,15 +515,19 @@ function go(screen){
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
   const el=document.getElementById('item-'+screen);
   if(el)el.classList.add('active');
-  const labels={login:'🔐 Connexion',onboarding:'🎯 Onboarding',solo_dash:'Dashboard Solo',solo_seances:'Mes Séances',activity_picker:'🏃 Activités',run_tracker:'📡 GPS Tracker',timer_tracker:'⏱ Timer activité',seance_timer:'⏱ Séance en cours',solo_nutri:'Nutrition',solo_stats:'Stats & Badges',find_coach:'🔍 Coach',food_scan:'📷 Scanner',subscription:'💳 Abonnement',payment:'💰 Paiement',coach_dash:'Dashboard Coach',coach_messages:'Messagerie'};
+  const labels={login:t('nav_login'),onboarding:t('nav_onboarding'),solo_dash:t('nav_dashboard'),solo_seances:t('nav_seances'),activity_picker:t('nav_activities'),run_tracker:t('nav_gps'),timer_tracker:t('nav_timer'),seance_timer:t('nav_seance_timer'),solo_nutri:t('nav_nutri'),solo_stats:t('nav_stats'),find_coach:t('nav_coach'),food_scan:t('nav_scanner'),subscription:t('nav_sub'),payment:t('nav_pay'),coach_dash:t('nav_coach_dash'),coach_messages:t('nav_coach_msg')};
   const groups={login:'🔑',onboarding:'🔑',solo_dash:'💪 Solo',solo_seances:'💪 Solo',activity_picker:'💪 Solo',run_tracker:'💪 Solo',timer_tracker:'💪 Solo',seance_timer:'💪 Solo',solo_nutri:'💪 Solo',solo_stats:'💪 Solo',find_coach:'💪 Solo',food_scan:'💪 Solo',subscription:'💪 Solo',payment:'💪 Solo',coach_dash:'👔 Coach',coach_messages:'👔 Coach'};
   document.getElementById('navLabel').textContent=labels[screen]||screen;
   document.getElementById('navBadge').textContent=groups[screen]||'🔑';
+  // Update nav dropdown item labels
+  const navTexts={login:t('nav_login'),onboarding:t('nav_onboarding'),solo_dash:t('nav_dashboard'),solo_seances:t('nav_seances'),activity_picker:t('nav_activities'),run_tracker:t('nav_gps'),timer_tracker:t('nav_timer'),seance_timer:t('nav_seance_timer'),solo_nutri:t('nav_nutri'),solo_stats:t('nav_stats'),find_coach:t('nav_coach'),food_scan:t('nav_scanner'),subscription:t('nav_sub'),payment:t('nav_pay'),coach_dash:t('nav_coach_dash'),coach_messages:t('nav_coach_msg')};
+  Object.entries(navTexts).forEach(([k,v])=>{const el=document.getElementById('item-'+k);if(el)el.textContent=v;});
+  const appSub=document.getElementById('appSub');if(appSub)appSub.textContent=t('app_sub');
   render();
 }
 
 function soloNav(cur){
-  const tabs=[{id:'solo_dash',icon:'🏠',label:'Accueil'},{id:'solo_seances',icon:'🏋️',label:'Séances'},{id:'solo_nutri',icon:'🍎',label:'Nutrition'},{id:'solo_stats',icon:'📊',label:'Stats'},{id:'find_coach',icon:'🔍',label:'Coach'}];
+  const tabs=[{id:'solo_dash',icon:'🏠',label:t('tab_home')},{id:'solo_seances',icon:'🏋️',label:t('tab_seances')},{id:'solo_nutri',icon:'🍎',label:t('tab_nutri')},{id:'solo_stats',icon:'📊',label:t('tab_stats')},{id:'find_coach',icon:'🔍',label:t('tab_coach')}];
   return `<div class="bottom-nav">${tabs.map(t=>`<div class="nav-tab" onclick="go('${t.id}')"><div class="icon">${t.icon}</div><span style="color:${cur===t.id?'var(--c)':'rgba(255,255,255,0.4)'};font-weight:${cur===t.id?900:400};">${t.label}</span></div>`).join('')}</div>`;
 }
 
@@ -406,9 +550,9 @@ function render(){
             <div class="gray f11">Mot de passe</div><div class="white f13">••••••••</div>
           </div>
         </div>
-        <button class="btn-cyan" style="margin-bottom:10px;" onclick="go('onboarding')">Se connecter</button>
-        <button class="btn-ghost" onclick="go('coach_dash')">Connexion Coach 👔</button>
-        <div style="color:rgba(255,255,255,0.3);font-size:11px;margin-top:14px;">Pas de compte ? <span style="color:var(--c);">S'inscrire</span></div>
+        <button class="btn-cyan" style="margin-bottom:10px;" onclick="go('onboarding')">${t('login_btn')}</button>
+        <button class="btn-ghost" onclick="go('coach_dash')">${t('login_coach')}</button>
+        <div style="color:rgba(255,255,255,0.3);font-size:11px;margin-top:14px;">${t('login_register').replace("?",'?')} <span style="color:var(--c);">${currentLang==='fr'?"S'inscrire":currentLang==='es'?'Regístrate':'Sign up'}</span></div>
       </div>
     </div>`;
   }
@@ -418,13 +562,19 @@ function render(){
     const imc=calcIMC();
     const steps=[
       `<div style="flex:1;padding:16px 20px 20px;overflow-y:auto;">
-        <div class="white f20 f900 mb8">Comment utiliser M.C.P ?</div>
-        <div class="gray f12" style="margin-bottom:20px;">Tu pourras changer à tout moment</div>
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:10px 14px;margin-bottom:16px;">
+          <div class="gray f11 mb8" style="font-weight:900;text-transform:uppercase;letter-spacing:.06em;">${t('lang_label')} / Language / Idioma</div>
+          <div style="display:flex;gap:8px;">
+            ${['fr','en','es'].map(l=>`<div onclick="currentLang='${l}';localStorage.setItem('mcp_lang','${l}');render();" style="flex:1;padding:8px 6px;border-radius:9px;text-align:center;cursor:pointer;background:${currentLang===l?'rgba(0,200,190,0.18)':'rgba(255,255,255,0.04)'};border:2px solid ${currentLang===l?'var(--c)':'rgba(255,255,255,0.08)'};font-size:13px;font-weight:900;color:${currentLang===l?'var(--c)':'rgba(255,255,255,0.5)'};">${l==='fr'?'🇫🇷 FR':l==='en'?'🇬🇧 EN':'🇪🇸 ES'}</div>`).join('')}
+          </div>
+        </div>
+        <div class="white f20 f900 mb8">${t('onb_mode_title')}</div>
+        <div class="gray f12" style="margin-bottom:20px;">${t('onb_mode_sub')}</div>
         <div style="background:var(--card);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:16px;margin-bottom:12px;cursor:pointer;" onclick="setOnbStep(1)">
-          <div class="row"><div style="font-size:28px;margin-right:4px;">🏋️</div><div><div class="white f14 f900">Mode Solo</div><div class="gray f11">Je gère mes séances et ma nutrition</div></div></div>
+          <div class="row"><div style="font-size:28px;margin-right:4px;">🏋️</div><div><div class="white f14 f900">${t('onb_solo')}</div><div class="gray f11">${t('onb_solo_desc')}</div></div></div>
         </div>
         <div style="background:var(--card);border:1px solid var(--bord);border-radius:16px;padding:16px;cursor:pointer;" onclick="setOnbStep(1)">
-          <div class="row"><div style="font-size:28px;margin-right:4px;">👔</div><div><div class="white f14 f900">Avec un Coach</div><div class="gray f11">Un coach personnalise mes programmes</div><div class="pill pill-cyan" style="margin-top:4px;">⭐ Recommandé</div></div></div>
+          <div class="row"><div style="font-size:28px;margin-right:4px;">👔</div><div><div class="white f14 f900">${t('onb_coach')}</div><div class="gray f11">${t('onb_coach_desc')}</div><div class="pill pill-cyan" style="margin-top:4px;">⭐ Recommandé</div></div></div>
         </div>
       </div>`,
       `<div style="flex:1;padding:16px 20px 12px;overflow-y:auto;">
@@ -479,9 +629,15 @@ function render(){
             <div style="background:rgba(255,255,255,0.06);border-radius:8px;padding:6px;text-align:center;"><div class="gray f11">Maxi</div><div class="white f12 f900">${imc.pMax} kg</div></div>
           </div>
         </div>
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:10px 14px;margin-bottom:10px;">
+          <div class="gray f11 mb8" style="font-weight:900;text-transform:uppercase;letter-spacing:.06em;">${t('lang_label')}</div>
+          <div style="display:flex;gap:8px;">
+            ${['fr','en','es'].map(l=>`<div onclick="currentLang='${l}';localStorage.setItem('mcp_lang','${l}');render();" style="flex:1;padding:8px 6px;border-radius:9px;text-align:center;cursor:pointer;background:${currentLang===l?'rgba(0,200,190,0.18)':'rgba(255,255,255,0.04)'};border:2px solid ${currentLang===l?'var(--c)':'rgba(255,255,255,0.08)'};font-size:13px;font-weight:900;color:${currentLang===l?'var(--c)':'rgba(255,255,255,0.5)'};">${l==='fr'?'🇫🇷 FR':l==='en'?'🇬🇧 EN':'🇪🇸 ES'}</div>`).join('')}
+          </div>
+        </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn-ghost" style="flex:1;" onclick="setOnbStep(0)">← Retour</button>
-          <button class="btn-cyan" style="flex:1;" onclick="setOnbStep(2)">Continuer →</button>
+          <button class="btn-ghost" style="flex:1;" onclick="setOnbStep(0)">${t('back')} Retour</button>
+          <button class="btn-cyan" style="flex:1;" onclick="setOnbStep(2)">${t('next')}</button>
         </div>
       </div>`,
       `<div style="flex:1;padding:16px 20px 12px;overflow-y:auto;">
@@ -567,14 +723,14 @@ function render(){
     sc.innerHTML=`<div class="screen" style="background:#07192a;">
       <div class="header">
         <div class="sb mb12">
-          <div><div class="gray f11">Bonjour 💪</div><div class="white f20 f900">Sophie</div></div>
+          <div><div class="gray f11">${t('dash_hello')}</div><div class="white f20 f900">Sophie</div></div>
           <div style="display:flex;gap:8px;">
             <div style="background:var(--c);border-radius:8px;padding:4px 8px;display:flex;align-items:center;gap:4px;"><span style="font-size:11px;">🔥</span><span style="color:#05111f;font-size:11px;font-weight:900;">${streak}j</span></div>
             <div onclick="go('find_coach')" style="background:rgba(255,255,255,0.1);border-radius:8px;padding:4px 8px;cursor:pointer;"><span style="color:white;font-size:11px;font-weight:900;">🔍 Coach</span></div>
           </div>
         </div>
         <div class="grid3">
-          ${[['🏋️',totalSeances,'Séances'],['🔥',streak+'j','Streak'],['⚖️','−'+(weight-goalWeight).toFixed(1)+'kg','Objectif']].map(([e,v,l])=>`<div class="stat-mini"><div style="font-size:18px;">${e}</div><div class="white f13 f900">${v}</div><div class="gray f11">${l}</div></div>`).join('')}
+          ${[['🏋️',totalSeances,t('dash_seances')],['🔥',streak+'j',t('dash_streak')],['⚖️','−'+(weight-goalWeight).toFixed(1)+'kg',t('dash_goal')]].map(([e,v,l])=>`<div class="stat-mini"><div style="font-size:18px;">${e}</div><div class="white f13 f900">${v}</div><div class="gray f11">${l}</div></div>`).join('')}
         </div>
       </div>
       <div class="pb24 px20 mt12" style="display:flex;flex-direction:column;gap:12px;">
@@ -596,7 +752,7 @@ function render(){
           </div>
         </div>`:''}
         <div class="card">
-          <div class="sb mb8"><div class="white f13 f900">Poids du jour ⚖️</div><div style="color:var(--c);font-weight:900;">${weight.toFixed(1)} kg</div></div>
+          <div class="sb mb8"><div class="white f13 f900">${t('dash_weight')}</div><div style="color:var(--c);font-weight:900;">${weight.toFixed(1)} kg</div></div>
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
             <button onclick="weight=Math.max(30,Math.round((weight-0.1)*10)/10);saveData();render();" style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.08);border:none;color:white;font-size:20px;cursor:pointer;">−</button>
             <div style="flex:1;text-align:center;"><div style="color:white;font-size:28px;font-weight:900;">${weight.toFixed(1)}</div><div class="gray f11">kg</div></div>
@@ -626,7 +782,7 @@ function render(){
           </div>
         </div>
         ${runHistory.length>0?`<div class="card" onclick="go('activity_picker')" style="cursor:pointer;">
-          <div class="sb mb8"><div class="white f13 f900">${runHistory[0].icon||'🏃'} Dernière activité</div><div style="color:var(--c);font-size:11px;font-weight:900;">${runHistory[0].date}</div></div>
+          <div class="sb mb8"><div class="white f13 f900">${runHistory[0].icon||'🏃'} ${t('dash_last_act')}</div><div style="color:var(--c);font-size:11px;font-weight:900;">${runHistory[0].date}</div></div>
           <div style="display:flex;gap:10px;">
             ${runHistory[0].type==='timer'?
               [['⏱',fmtTime(runHistory[0].time)],['🔥',runHistory[0].cal+' kcal'],['💪',runHistory[0].name||'Activité']].map(([ic,v])=>`<div style="background:rgba(0,200,190,0.06);border-radius:8px;padding:6px 10px;text-align:center;flex:1;"><div style="font-size:14px;">${ic}</div><div style="color:var(--c);font-size:12px;font-weight:900;">${v}</div></div>`).join(''):
@@ -635,11 +791,11 @@ function render(){
         </div>`:''}
         <div onclick="go('find_coach')" style="background:linear-gradient(135deg,#05111f,#0a3d52);border-radius:16px;padding:14px;cursor:pointer;display:flex;align-items:center;gap:12px;">
           <div style="width:44px;height:44px;border-radius:10px;background:var(--c);display:flex;align-items:center;justify-content:center;font-size:22px;">👔</div>
-          <div style="flex:1;"><div class="white f13 f900">Trouver un coach</div><div style="color:rgba(255,255,255,0.5);font-size:11px;">4 coachs disponibles</div></div>
+          <div style="flex:1;"><div class="white f13 f900">${t('dash_find_coach')}</div><div style="color:rgba(255,255,255,0.5);font-size:11px;">${t('dash_coaches')}</div></div>
           <span class="white">›</span>
         </div>
         <div class="card">
-          <div class="sb mb10"><div class="white f13 f900">Badges 🏅</div><div onclick="go('solo_stats')" style="color:var(--c);font-size:11px;font-weight:900;cursor:pointer;">Voir tout</div></div>
+          <div class="sb mb10"><div class="white f13 f900">${t('dash_badges')}</div><div onclick="go('solo_stats')" style="color:var(--c);font-size:11px;font-weight:900;cursor:pointer;">${t('dash_see_all')}</div></div>
           <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;">
             ${badges.filter(b=>b.earned).map(b=>`<div style="text-align:center;flex-shrink:0;"><div style="font-size:22px;width:44px;height:44px;background:rgba(255,255,255,0.06);border:1px solid rgba(0,200,190,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;">${b.icon}</div><div class="gray f11" style="width:44px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;">${b.name}</div></div>`).join('')}
           </div>
@@ -647,11 +803,11 @@ function render(){
       </div>
         <div onclick="go('find_coach')" style="background:linear-gradient(135deg,#05111f,#0a3d52);border-radius:16px;padding:14px;cursor:pointer;display:flex;align-items:center;gap:12px;">
           <div style="width:44px;height:44px;border-radius:10px;background:var(--c);display:flex;align-items:center;justify-content:center;font-size:22px;">👔</div>
-          <div style="flex:1;"><div class="white f13 f900">Trouver un coach</div><div style="color:rgba(255,255,255,0.5);font-size:11px;">4 coachs disponibles</div></div>
+          <div style="flex:1;"><div class="white f13 f900">${t('dash_find_coach')}</div><div style="color:rgba(255,255,255,0.5);font-size:11px;">${t('dash_coaches')}</div></div>
           <span class="white">›</span>
         </div>
         <div class="card">
-          <div class="sb mb10"><div class="white f13 f900">Badges 🏅</div><div onclick="go('solo_stats')" style="color:var(--c);font-size:11px;font-weight:900;cursor:pointer;">Voir tout</div></div>
+          <div class="sb mb10"><div class="white f13 f900">${t('dash_badges')}</div><div onclick="go('solo_stats')" style="color:var(--c);font-size:11px;font-weight:900;cursor:pointer;">${t('dash_see_all')}</div></div>
           <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;">
             ${badges.filter(b=>b.earned).map(b=>`<div style="text-align:center;flex-shrink:0;"><div style="font-size:22px;width:44px;height:44px;background:rgba(255,255,255,0.06);border:1px solid rgba(0,200,190,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;">${b.icon}</div><div class="gray f11" style="width:44px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;">${b.name}</div></div>`).join('')}
           </div>
@@ -664,13 +820,13 @@ function render(){
   else if(s==='solo_seances'){
     sc.innerHTML=`<div class="screen" style="background:#07192a;">
       <div style="padding:40px 20px 16px;background:linear-gradient(135deg,#05111f,#072d3d);">
-        <div class="white f20 f900 mb8">Mes Séances</div>
-        <button onclick="seancesView='new';render();" style="position:absolute;top:42px;right:20px;background:var(--c);border:none;color:#05111f;border-radius:8px;padding:6px 12px;font-weight:900;font-size:11px;cursor:pointer;">+ Nouvelle</button>
+        <div class="white f20 f900 mb8">${t('seances_title')}</div>
+        <button onclick="seancesView='new';render();" style="position:absolute;top:42px;right:20px;background:var(--c);border:none;color:#05111f;border-radius:8px;padding:6px 12px;font-weight:900;font-size:11px;cursor:pointer;">${t('seances_new')}</button>
       </div>
       <div class="pb24 px20 mt12" style="display:flex;flex-direction:column;gap:10px;">
         <div onclick="go('activity_picker');" style="background:linear-gradient(135deg,rgba(0,200,190,0.12),rgba(0,168,216,0.08));border:1px solid rgba(0,200,190,0.25);border-radius:16px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;">
           <div style="width:48px;height:48px;border-radius:14px;background:rgba(0,200,190,0.2);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">🏃</div>
-          <div style="flex:1;"><div class="white f14 f900">Activités sportives</div><div class="gray f11">Course · Vélo · Marche · Yoga · Natation · HIIT...</div><div style="margin-top:4px;"><span style="background:rgba(0,200,190,0.15);color:var(--c);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:900;">📡 GPS</span><span style="background:rgba(168,85,247,0.15);color:#A855F7;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:900;margin-left:4px;">⏱ Timer</span><span style="background:rgba(37,211,102,0.15);color:#25D366;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:900;margin-left:4px;">📤 Partage</span></div></div>
+          <div style="flex:1;"><div class="white f14 f900">${t('seances_act_title')}</div><div class="gray f11">${t('seances_act_desc')}</div><div style="margin-top:4px;"><span style="background:rgba(0,200,190,0.15);color:var(--c);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:900;">📡 GPS</span><span style="background:rgba(168,85,247,0.15);color:#A855F7;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:900;margin-left:4px;">⏱ Timer</span><span style="background:rgba(37,211,102,0.15);color:#25D366;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:900;margin-left:4px;">📤 Partage</span></div></div>
           <div style="color:var(--c);font-size:22px;">›</div>
         </div>
         <div class="card">
@@ -780,7 +936,7 @@ function render(){
     sc.innerHTML=`<div class="screen" style="background:#05111f;">
       <div style="background:linear-gradient(135deg,#05111f,#072d3d);padding:40px 20px 16px;">
         <div class="sb mb12">
-          <div><div class="gray f11">Progression</div><div class="white f20 f900">Stats & Badges</div></div>
+          <div><div class="gray f11">Progression</div><div class="white f20 f900">${t('stats_title')}</div></div>
           <div style="background:rgba(0,200,190,0.15);border:1px solid rgba(0,200,190,0.3);border-radius:10px;padding:6px 10px;text-align:right;"><div style="color:var(--c2);font-size:16px;font-weight:900;">${xp.toLocaleString()}</div><div style="color:var(--c2);font-size:10px;">XP total</div></div>
         </div>
         <div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:10px;">
@@ -789,7 +945,7 @@ function render(){
           <div class="sb f11 mt8 gray"><span>${pct}% complété</span><span>${badges.length-earned.length} restants</span></div>
         </div>
         <div class="tab-bar mt12">
-          ${[['badges','🏅 Badges'],['stats','📊 Stats']].map(([k,l])=>`<div class="tab-btn ${statsTab===k?'active':''}" onclick="statsTab='${k}';render();">${l}</div>`).join('')}
+          ${[['badges',t('stats_tab_b')],['stats',t('stats_tab_s')]].map(([k,l])=>`<div class="tab-btn ${statsTab===k?'active':''}" onclick="statsTab='${k}';render();">${l}</div>`).join('')}
         </div>
       </div>
       <div class="pb24 px20 mt12" style="flex:1;overflow-y:auto;">
@@ -844,14 +1000,14 @@ function render(){
   else if(s==='find_coach'){
     sc.innerHTML=`<div class="screen" style="background:#05111f;">
       <div style="background:linear-gradient(135deg,#05111f,#0a3d52);padding:40px 20px 16px;">
-        <div class="white f20 f900 mb4">Trouver un Coach</div>
-        <div class="gray f11 mb10">4 coachs disponibles près de toi 📍</div>
+        <div class="white f20 f900 mb4">${t('coach_title')}</div>
+        <div class="gray f11 mb10">${t('coach_nearby')}</div>
         <div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;margin-bottom:10px;">
           <span class="gray">🔍</span><span class="gray f13">Nom, spécialité...</span>
         </div>
         <div style="display:flex;background:rgba(255,255,255,0.06);border-radius:10px;padding:3px;gap:3px;">
-          <div onclick="coachView='liste';render();" style="flex:1;text-align:center;padding:7px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:900;background:${coachView==='liste'?'rgba(0,200,190,0.2)':'transparent'};color:${coachView==='liste'?'var(--c)':'rgba(255,255,255,0.4)'};">📋 Liste</div>
-          <div onclick="coachView='carte';render();" style="flex:1;text-align:center;padding:7px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:900;background:${coachView==='carte'?'rgba(0,200,190,0.2)':'transparent'};color:${coachView==='carte'?'var(--c)':'rgba(255,255,255,0.4)'};">🗺️ Carte</div>
+          <div onclick="coachView='liste';render();" style="flex:1;text-align:center;padding:7px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:900;background:${coachView==='liste'?'rgba(0,200,190,0.2)':'transparent'};color:${coachView==='liste'?'var(--c)':'rgba(255,255,255,0.4)'};">${t('coach_list')}</div>
+          <div onclick="coachView='carte';render();" style="flex:1;text-align:center;padding:7px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:900;background:${coachView==='carte'?'rgba(0,200,190,0.2)':'transparent'};color:${coachView==='carte'?'var(--c)':'rgba(255,255,255,0.4)'};">${t('coach_map')}</div>
         </div>
       </div>
       <div class="pb24 px20 mt12" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
@@ -1076,8 +1232,8 @@ function render(){
     sc.innerHTML=`<div class="screen" style="background:#05111f;">
       <div style="background:linear-gradient(135deg,#05111f,#072d3d);padding:40px 20px 16px;">
         <div onclick="go('solo_seances');" style="color:rgba(255,255,255,0.5);font-size:12px;cursor:pointer;margin-bottom:8px;">← Séances</div>
-        <div class="white f20 f900 mb4">Nouvelle activité</div>
-        <div class="gray f11">Choisis ton sport du jour 🏅</div>
+        <div class="white f20 f900 mb4">${t('act_title')}</div>
+        <div class="gray f11">${t('act_sub')}</div>
       </div>
       <div style="flex:1;overflow-y:auto;padding:16px 20px 24px;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -1086,7 +1242,7 @@ function render(){
             <div style="font-size:38px;margin-bottom:8px;">${act.icon}</div>
             <div class="white f13 f900 mb4">${act.name}</div>
             <div style="color:rgba(255,255,255,0.45);font-size:10px;line-height:1.4;">${act.desc}</div>
-            <div style="margin-top:10px;"><span style="background:${act.color}25;color:${act.color};border-radius:6px;padding:3px 9px;font-size:10px;font-weight:900;">${act.type==='gps'?'📡 GPS':'⏱ Timer'}</span></div>
+            <div style="margin-top:10px;"><span style="background:${act.color}25;color:${act.color};border-radius:6px;padding:3px 9px;font-size:10px;font-weight:900;">${act.type==='gps'?t('act_gps'):t('act_timer')}</span></div>
           </div>`).join('')}
         </div>
       </div>
@@ -1099,7 +1255,7 @@ function render(){
     const calBurned=Math.round(actTimerSec*(act.calPer/60)*(onbForm.poids/70));
     const isSwim=act.id==='swim';
     const stColor={idle:'rgba(255,255,255,0.4)',running:'#10B981',paused:'#F59E0B',finished:'#00C8BE'};
-    const stLabel={idle:'⬜ Prêt',running:'● En cours',paused:'⏸ Pause',finished:'✓ Terminé'};
+    const stLabel={idle:t('run_ready'),running:t('run_running'),paused:t('run_paused'),finished:t('run_done')};
     sc.innerHTML=`<div class="screen" style="background:#05111f;">
       <div style="background:linear-gradient(135deg,#05111f,#072d3d);padding:40px 20px 16px;">
         <div onclick="if(actTimerState==='running'||actTimerState==='paused'){stopActTimer();}go('activity_picker');" style="color:rgba(255,255,255,0.5);font-size:12px;cursor:pointer;margin-bottom:8px;">← Activités</div>
@@ -1117,9 +1273,9 @@ function render(){
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
             ${[['⏱',fmtTime(actTimerSec),'Durée'],['🔥',calBurned+' kcal','Calories'],isSwim?['🏊',actLaps+' long.','Longueurs']:['💪',act.name,'Activité'],['📅',new Date().toLocaleDateString('fr-FR'),'Date']].map(([ic,v,l])=>`<div style="background:rgba(0,200,190,0.06);border:1px solid rgba(0,200,190,0.1);border-radius:12px;padding:12px;text-align:center;"><div style="font-size:20px;">${ic}</div><div style="color:var(--c);font-size:15px;font-weight:900;">${v}</div><div class="gray f11">${l}</div></div>`).join('')}
           </div>
-          <button onclick="shareActivity();" style="background:linear-gradient(135deg,var(--c),#4ECDC4);border:none;color:#05111f;border-radius:12px;padding:13px;font-weight:900;font-size:14px;cursor:pointer;width:100%;margin-bottom:10px;">📤 Partager mon activité</button>
-          <button onclick="streak++;totalSeances++;saveData();go('solo_dash');" style="background:var(--c);border:none;color:#05111f;border-radius:12px;padding:13px;font-weight:900;font-size:14px;cursor:pointer;width:100%;margin-bottom:10px;">✓ Valider l'activité</button>
-          <button onclick="resetActTimer();go('activity_picker');" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:12px;padding:11px;font-weight:900;font-size:13px;cursor:pointer;width:100%;">🔄 Nouvelle activité</button>
+          <button onclick="shareActivity();" style="background:linear-gradient(135deg,var(--c),#4ECDC4);border:none;color:#05111f;border-radius:12px;padding:13px;font-weight:900;font-size:14px;cursor:pointer;width:100%;margin-bottom:10px;">${t('timer_share')}</button>
+          <button onclick="streak++;totalSeances++;saveData();go('solo_dash');" style="background:var(--c);border:none;color:#05111f;border-radius:12px;padding:13px;font-weight:900;font-size:14px;cursor:pointer;width:100%;margin-bottom:10px;">${t('timer_validate')}</button>
+          <button onclick="resetActTimer();go('activity_picker');" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:12px;padding:11px;font-weight:900;font-size:13px;cursor:pointer;width:100%;">${t('new_act')}</button>
         </div>
       `:`
         <div style="width:170px;height:170px;border-radius:50%;border:5px solid ${actTimerState==='running'?act.color:'rgba(255,255,255,0.12)'};display:flex;flex-direction:column;align-items:center;justify-content:center;background:${act.color}10;margin:8px auto;">
@@ -1145,7 +1301,7 @@ function render(){
         </div>
         ${actTimerState==='idle'?`
         <div class="gray f12" style="text-align:center;">${act.desc}</div>
-        <button onclick="startActTimer();" style="width:100%;background:${act.color};border:none;color:#05111f;border-radius:14px;padding:18px;font-weight:900;font-size:16px;cursor:pointer;">${act.icon} Démarrer ${act.name}</button>
+        <button onclick="startActTimer();" style="width:100%;background:${act.color};border:none;color:#05111f;border-radius:14px;padding:18px;font-weight:900;font-size:16px;cursor:pointer;">${act.icon} ${t('start')} ${act.name}</button>
         `:actTimerState==='running'?`
         <div style="display:flex;gap:10px;width:100%;">
           <button onclick="pauseActTimer();" style="flex:1;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:#F59E0B;border-radius:12px;padding:14px;font-weight:900;font-size:14px;cursor:pointer;">⏸ Pause</button>
@@ -1165,7 +1321,7 @@ function render(){
   else if(s==='run_tracker'){
     const {speed,cal}=runCalc();
     const stColor={idle:'rgba(255,255,255,0.4)',running:'#10B981',paused:'#F59E0B',finished:'#00C8BE'};
-    const stLabel={idle:'⬜ Prêt',running:'● En cours',paused:'⏸ Pause',finished:'✓ Terminé'};
+    const stLabel={idle:t('run_ready'),running:t('run_running'),paused:t('run_paused'),finished:t('run_done')};
     sc.innerHTML=`<div class="screen" style="background:#05111f;">
       <div style="background:linear-gradient(135deg,#05111f,#072d3d);padding:40px 20px 12px;">
         <div onclick="if(runState!=='idle')stopRun();go('activity_picker');" style="color:rgba(255,255,255,0.5);font-size:12px;cursor:pointer;margin-bottom:8px;">← Activités</div>
@@ -1185,7 +1341,7 @@ function render(){
         </div>
         ${runHistory.filter(r=>r.type==='gps'||!r.type).length>0?`
         <div style="margin-top:4px;">
-          <div class="white f13 f900 mb8">📋 Historique GPS</div>
+          <div class="white f13 f900 mb8">${t('run_hist')}</div>
           ${runHistory.filter(r=>r.type==='gps'||!r.type).map((r,i)=>`<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:8px;">
             <div style="width:34px;height:34px;border-radius:8px;background:rgba(0,200,190,0.1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${r.icon||'🏃'}</div>
             <div style="flex:1;">
@@ -1221,12 +1377,12 @@ function render(){
           </div>
         </div>
         <div class="white f13 f900">Partager ta performance 📤</div>
-        <button onclick="shareRun();" style="background:linear-gradient(135deg,var(--c),#4ECDC4);border:none;color:#05111f;border-radius:12px;padding:14px;font-weight:900;font-size:14px;cursor:pointer;width:100%;">📤 Partager ma course</button>
+        <button onclick="shareRun();" style="background:linear-gradient(135deg,var(--c),#4ECDC4);border:none;color:#05111f;border-radius:12px;padding:14px;font-weight:900;font-size:14px;cursor:pointer;width:100%;">${t('run_share')}</button>
         <div id="run-share-panel" style="display:none;flex-direction:column;gap:8px;">
           <a id="run-wa-link" href="#" target="_blank" style="display:flex;align-items:center;gap:10px;background:rgba(37,211,102,0.12);border:1px solid rgba(37,211,102,0.25);border-radius:12px;padding:12px;text-decoration:none;"><div style="font-size:22px;">💬</div><div><div style="color:#25D366;font-weight:900;font-size:13px;">WhatsApp</div><div class="gray f11">Partager ma course</div></div></a>
           <a id="run-tw-link" href="#" target="_blank" style="display:flex;align-items:center;gap:10px;background:rgba(29,161,242,0.12);border:1px solid rgba(29,161,242,0.25);border-radius:12px;padding:12px;text-decoration:none;"><div style="font-size:22px;">🐦</div><div><div style="color:#1DA1F2;font-weight:900;font-size:13px;">Twitter / X</div><div class="gray f11">Tweeter ma performance</div></div></a>
         </div>
-        <button onclick="resetRun();" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:12px;padding:12px;font-weight:900;font-size:13px;cursor:pointer;width:100%;">🔄 Nouvelle course</button>
+        <button onclick="resetRun();" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:12px;padding:12px;font-weight:900;font-size:13px;cursor:pointer;width:100%;">${t('run_new')}</button>
         `}
       `}
       </div>
@@ -1461,6 +1617,7 @@ function saveData(){
     localStorage.setItem('mcp_meals',JSON.stringify({date:today(),done:meals.map(m=>m.d)}));
     localStorage.setItem('mcp_runHistory',JSON.stringify(runHistory));
     localStorage.setItem('mcp_badges',JSON.stringify(badges.map(b=>({id:b.id,earned:b.earned}))));
+    localStorage.setItem('mcp_lang',currentLang);
   }catch(e){}
 }
 
@@ -1482,6 +1639,8 @@ function loadData(){
     if(rh)runHistory=JSON.parse(rh);
     const bds=localStorage.getItem('mcp_badges');
     if(bds){const saved=JSON.parse(bds);saved.forEach(sb=>{const b=badges.find(x=>x.id===sb.id);if(b)b.earned=sb.earned;});}
+    const lg=localStorage.getItem('mcp_lang');
+    if(lg&&['fr','en','es'].includes(lg))currentLang=lg;
   }catch(e){}
 }
 // ───────────────────────────────────────────────────────────────────────────
