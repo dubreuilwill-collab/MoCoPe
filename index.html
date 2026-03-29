@@ -96,7 +96,9 @@ input::placeholder{color:rgba(255,255,255,0.3);}
       <div class="nav-group-label">💪 SPORTIF SOLO</div>
       <button class="nav-item" id="item-solo_dash" onclick="go('solo_dash')">Dashboard Solo</button>
       <button class="nav-item" id="item-solo_seances" onclick="go('solo_seances')">Mes Séances</button>
-      <button class="nav-item" id="item-run_tracker" onclick="go('run_tracker')">🏃 Course à pied</button>
+      <button class="nav-item" id="item-activity_picker" onclick="go('activity_picker')">🏃 Activités</button>
+      <button class="nav-item" id="item-run_tracker" onclick="go('run_tracker')">📡 GPS Tracker</button>
+      <button class="nav-item" id="item-timer_tracker" onclick="go('timer_tracker')">⏱ Timer activité</button>
       <button class="nav-item" id="item-solo_nutri" onclick="go('solo_nutri')">Nutrition</button>
       <button class="nav-item" id="item-solo_stats" onclick="go('solo_stats')">Stats & Badges</button>
       <button class="nav-item" id="item-find_coach" onclick="go('find_coach')">🔍 Trouver un Coach</button>
@@ -163,6 +165,21 @@ let runWatchId=null;
 let runTimerIv=null;
 let runSimIv=null;
 let runSimStep=0;
+const ACTIVITIES=[
+  {id:'run',  name:'Course',   icon:'🏃', color:'#00C8BE', type:'gps',   calPer:65,  desc:'GPS · Temps · Distance · Vitesse'},
+  {id:'bike', name:'Vélo',     icon:'🚴', color:'#00A8D8', type:'gps',   calPer:30,  desc:'GPS · Distance · Vitesse moy.'},
+  {id:'walk', name:'Marche',   icon:'🚶', color:'#10B981', type:'gps',   calPer:40,  desc:'GPS · Pas · Distance'},
+  {id:'yoga', name:'Yoga',     icon:'🧘', color:'#A855F7', type:'timer', calPer:3,   desc:'Minuteur · Respiration · Souplesse'},
+  {id:'swim', name:'Natation', icon:'🏊', color:'#3B82F6', type:'timer', calPer:8,   desc:'Longueurs · Temps · Cardio'},
+  {id:'hiit', name:'HIIT',     icon:'⚡', color:'#EF4444', type:'timer', calPer:12,  desc:'Intervalles · Brûle-graisses'},
+  {id:'box',  name:'Combat',   icon:'🥊', color:'#F59E0B', type:'timer', calPer:9,   desc:'Rounds · Explosivité'},
+  {id:'spin', name:'Spinning', icon:'🎡', color:'#EC4899', type:'timer', calPer:10,  desc:'RPM · Puissance · Endurance'},
+];
+let currentActivity=ACTIVITIES[0];
+let actTimerSec=0;
+let actTimerIv=null;
+let actTimerState='idle';
+let actLaps=0;
 const RUN_SIM_DIRS=[[0.00004,0.00006],[0.00004,0.00006],[0.00005,0.00005],[0.00004,0.00007],[0.00003,0.00006],[0.00005,0.00004],[0.00004,0.00006],[0.00003,0.00005],[-0.00001,0.00006],[-0.00003,0.00005],[-0.00004,0.00004],[-0.00005,0.00004],[-0.00005,0.00002],[-0.00005,-0.00001],[-0.00004,-0.00003],[-0.00005,-0.00004],[-0.00004,-0.00005],[-0.00003,-0.00005],[-0.00002,-0.00006],[0.00001,-0.00006],[0.00003,-0.00005],[0.00004,-0.00004],[0.00005,-0.00002],[0.00004,0.00001]];
 let runHistory=[];
 let streak=12;
@@ -259,7 +276,15 @@ const badges = [
   {id:"d8", cat:"defis",     tier:"argent",    icon:"🚫", name:"Sans sucre",      earned:false, xp:400,  desc:"21 jours de chrono-nutrition"},
   {id:"d9", cat:"defis",     tier:"or",        icon:"⚔️", name:"Samouraï",        earned:false, xp:2000, desc:"50j streak + objectif calorique"},
   {id:"d10",cat:"defis",     tier:"legendaire",icon:"🌈", name:"M.C.P Legend",    earned:false, xp:9999, desc:"Débloque 40 badges"},
-  {id:"bday",cat:"defis",    tier:"legendaire",icon:"🎂", name:"Birthday Warrior", earned:false, xp:2500, desc:"Fais une séance le jour de ton anniversaire 🎂"},
+  {id:"bday",  cat:"defis",  tier:"legendaire",icon:"🎂", name:"Birthday Warrior", earned:false, xp:2500, desc:"Fais une séance le jour de ton anniversaire 🎂"},
+  // ACTIVITÉS MULTIPLES
+  {id:"act_bike",cat:"defis",tier:"bronze",   icon:"🚴", name:"Cyclo",            earned:false, xp:300,  desc:"Complète 5 sorties vélo"},
+  {id:"act_walk",cat:"defis",tier:"bronze",   icon:"🚶", name:"Marcheur",         earned:false, xp:200,  desc:"Marche 10 km en cumulé"},
+  {id:"act_yoga",cat:"defis",tier:"argent",   icon:"🧘", name:"Zen Master",       earned:false, xp:400,  desc:"10 séances de yoga"},
+  {id:"act_swim",cat:"defis",tier:"argent",   icon:"🏊", name:"Dauphin",          earned:false, xp:500,  desc:"Swim 20 longueurs de piscine"},
+  {id:"act_hiit",cat:"defis",tier:"argent",   icon:"⚡", name:"Brûleur",          earned:false, xp:400,  desc:"5 séances HIIT complètes"},
+  {id:"act_box", cat:"defis",tier:"or",       icon:"🥊", name:"Combattant",       earned:false, xp:800,  desc:"10 rounds de combat"},
+  {id:"act_all", cat:"defis",  tier:"or",     icon:"🌈", name:"Polyvalent",       earned:false, xp:1500, desc:"Pratique 5 activités différentes"},
 ];
 
 const SEANCES=[
@@ -350,8 +375,8 @@ function go(screen){
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
   const el=document.getElementById('item-'+screen);
   if(el)el.classList.add('active');
-  const labels={login:'🔐 Connexion',onboarding:'🎯 Onboarding',solo_dash:'Dashboard Solo',solo_seances:'Mes Séances',run_tracker:'🏃 Course à pied',seance_timer:'⏱ Séance en cours',solo_nutri:'Nutrition',solo_stats:'Stats & Badges',find_coach:'🔍 Coach',food_scan:'📷 Scanner',subscription:'💳 Abonnement',payment:'💰 Paiement',coach_dash:'Dashboard Coach',coach_messages:'Messagerie'};
-  const groups={login:'🔑',onboarding:'🔑',solo_dash:'💪 Solo',solo_seances:'💪 Solo',run_tracker:'💪 Solo',seance_timer:'💪 Solo',solo_nutri:'💪 Solo',solo_stats:'💪 Solo',find_coach:'💪 Solo',food_scan:'💪 Solo',subscription:'💪 Solo',payment:'💪 Solo',coach_dash:'👔 Coach',coach_messages:'👔 Coach'};
+  const labels={login:'🔐 Connexion',onboarding:'🎯 Onboarding',solo_dash:'Dashboard Solo',solo_seances:'Mes Séances',activity_picker:'🏃 Activités',run_tracker:'📡 GPS Tracker',timer_tracker:'⏱ Timer activité',seance_timer:'⏱ Séance en cours',solo_nutri:'Nutrition',solo_stats:'Stats & Badges',find_coach:'🔍 Coach',food_scan:'📷 Scanner',subscription:'💳 Abonnement',payment:'💰 Paiement',coach_dash:'Dashboard Coach',coach_messages:'Messagerie'};
+  const groups={login:'🔑',onboarding:'🔑',solo_dash:'💪 Solo',solo_seances:'💪 Solo',activity_picker:'💪 Solo',run_tracker:'💪 Solo',timer_tracker:'💪 Solo',seance_timer:'💪 Solo',solo_nutri:'💪 Solo',solo_stats:'💪 Solo',find_coach:'💪 Solo',food_scan:'💪 Solo',subscription:'💪 Solo',payment:'💪 Solo',coach_dash:'👔 Coach',coach_messages:'👔 Coach'};
   document.getElementById('navLabel').textContent=labels[screen]||screen;
   document.getElementById('navBadge').textContent=groups[screen]||'🔑';
   render();
@@ -600,10 +625,12 @@ function render(){
             <div class="bar-bg mt8" style="height:5px;"><div style="width:${Math.min(100,water/8*100)}%;height:100%;background:#3B82F6;border-radius:4px;"></div></div>
           </div>
         </div>
-        ${runHistory.length>0?`<div class="card" onclick="go('run_tracker')" style="cursor:pointer;">
-          <div class="sb mb8"><div class="white f13 f900">🏃 Dernière course</div><div style="color:var(--c);font-size:11px;font-weight:900;">${runHistory[0].date}</div></div>
+        ${runHistory.length>0?`<div class="card" onclick="go('activity_picker')" style="cursor:pointer;">
+          <div class="sb mb8"><div class="white f13 f900">${runHistory[0].icon||'🏃'} Dernière activité</div><div style="color:var(--c);font-size:11px;font-weight:900;">${runHistory[0].date}</div></div>
           <div style="display:flex;gap:10px;">
-            ${[['📍',runHistory[0].dist.toFixed(2)+' km'],['⏱',fmtTime(runHistory[0].time)],['🔥',runHistory[0].cal+' kcal']].map(([ic,v])=>`<div style="background:rgba(0,200,190,0.06);border-radius:8px;padding:6px 10px;text-align:center;flex:1;"><div style="font-size:14px;">${ic}</div><div style="color:var(--c);font-size:12px;font-weight:900;">${v}</div></div>`).join('')}
+            ${runHistory[0].type==='timer'?
+              [['⏱',fmtTime(runHistory[0].time)],['🔥',runHistory[0].cal+' kcal'],['💪',runHistory[0].name||'Activité']].map(([ic,v])=>`<div style="background:rgba(0,200,190,0.06);border-radius:8px;padding:6px 10px;text-align:center;flex:1;"><div style="font-size:14px;">${ic}</div><div style="color:var(--c);font-size:12px;font-weight:900;">${v}</div></div>`).join(''):
+              [['📍',runHistory[0].dist.toFixed(2)+' km'],['⏱',fmtTime(runHistory[0].time)],['🔥',runHistory[0].cal+' kcal']].map(([ic,v])=>`<div style="background:rgba(0,200,190,0.06);border-radius:8px;padding:6px 10px;text-align:center;flex:1;"><div style="font-size:14px;">${ic}</div><div style="color:var(--c);font-size:12px;font-weight:900;">${v}</div></div>`).join('')}
           </div>
         </div>`:''}
         <div onclick="go('find_coach')" style="background:linear-gradient(135deg,#05111f,#0a3d52);border-radius:16px;padding:14px;cursor:pointer;display:flex;align-items:center;gap:12px;">
@@ -641,9 +668,9 @@ function render(){
         <button onclick="seancesView='new';render();" style="position:absolute;top:42px;right:20px;background:var(--c);border:none;color:#05111f;border-radius:8px;padding:6px 12px;font-weight:900;font-size:11px;cursor:pointer;">+ Nouvelle</button>
       </div>
       <div class="pb24 px20 mt12" style="display:flex;flex-direction:column;gap:10px;">
-        <div onclick="go('run_tracker');" style="background:linear-gradient(135deg,rgba(0,200,190,0.12),rgba(0,168,216,0.08));border:1px solid rgba(0,200,190,0.25);border-radius:16px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;">
+        <div onclick="go('activity_picker');" style="background:linear-gradient(135deg,rgba(0,200,190,0.12),rgba(0,168,216,0.08));border:1px solid rgba(0,200,190,0.25);border-radius:16px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;">
           <div style="width:48px;height:48px;border-radius:14px;background:rgba(0,200,190,0.2);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">🏃</div>
-          <div style="flex:1;"><div class="white f14 f900">Course à pied</div><div class="gray f11">GPS · Temps · Distance · Vitesse · Calories</div><div style="margin-top:4px;"><span style="background:rgba(0,200,190,0.15);color:var(--c);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:900;">📡 GPS live</span><span style="background:rgba(37,211,102,0.15);color:#25D366;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:900;margin-left:4px;">📤 Partage</span></div></div>
+          <div style="flex:1;"><div class="white f14 f900">Activités sportives</div><div class="gray f11">Course · Vélo · Marche · Yoga · Natation · HIIT...</div><div style="margin-top:4px;"><span style="background:rgba(0,200,190,0.15);color:var(--c);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:900;">📡 GPS</span><span style="background:rgba(168,85,247,0.15);color:#A855F7;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:900;margin-left:4px;">⏱ Timer</span><span style="background:rgba(37,211,102,0.15);color:#25D366;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:900;margin-left:4px;">📤 Partage</span></div></div>
           <div style="color:var(--c);font-size:22px;">›</div>
         </div>
         <div class="card">
@@ -1045,34 +1072,124 @@ function render(){
     </div>`;
   }
 
+  else if(s==='activity_picker'){
+    sc.innerHTML=`<div class="screen" style="background:#05111f;">
+      <div style="background:linear-gradient(135deg,#05111f,#072d3d);padding:40px 20px 16px;">
+        <div onclick="go('solo_seances');" style="color:rgba(255,255,255,0.5);font-size:12px;cursor:pointer;margin-bottom:8px;">← Séances</div>
+        <div class="white f20 f900 mb4">Nouvelle activité</div>
+        <div class="gray f11">Choisis ton sport du jour 🏅</div>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:16px 20px 24px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          ${ACTIVITIES.map(act=>`
+          <div onclick="currentActivity=ACTIVITIES.find(a=>a.id==='${act.id}');${act.type==='gps'?"runState='idle';runSec=0;runDist=0;runPoints=[];runSimStep=0;go('run_tracker');":"actTimerSec=0;actTimerState='idle';actLaps=0;go('timer_tracker');"}" style="background:${act.color}18;border:1.5px solid ${act.color}40;border-radius:16px;padding:16px;cursor:pointer;text-align:center;transition:all .15s;">
+            <div style="font-size:38px;margin-bottom:8px;">${act.icon}</div>
+            <div class="white f13 f900 mb4">${act.name}</div>
+            <div style="color:rgba(255,255,255,0.45);font-size:10px;line-height:1.4;">${act.desc}</div>
+            <div style="margin-top:10px;"><span style="background:${act.color}25;color:${act.color};border-radius:6px;padding:3px 9px;font-size:10px;font-weight:900;">${act.type==='gps'?'📡 GPS':'⏱ Timer'}</span></div>
+          </div>`).join('')}
+        </div>
+      </div>
+      ${soloNav('solo_seances')}
+    </div>`;
+  }
+
+  else if(s==='timer_tracker'){
+    const act=currentActivity;
+    const calBurned=Math.round(actTimerSec*(act.calPer/60)*(onbForm.poids/70));
+    const isSwim=act.id==='swim';
+    const stColor={idle:'rgba(255,255,255,0.4)',running:'#10B981',paused:'#F59E0B',finished:'#00C8BE'};
+    const stLabel={idle:'⬜ Prêt',running:'● En cours',paused:'⏸ Pause',finished:'✓ Terminé'};
+    sc.innerHTML=`<div class="screen" style="background:#05111f;">
+      <div style="background:linear-gradient(135deg,#05111f,#072d3d);padding:40px 20px 16px;">
+        <div onclick="if(actTimerState==='running'||actTimerState==='paused'){stopActTimer();}go('activity_picker');" style="color:rgba(255,255,255,0.5);font-size:12px;cursor:pointer;margin-bottom:8px;">← Activités</div>
+        <div class="sb">
+          <div class="white f20 f900">${act.icon} ${act.name}</div>
+          <div style="background:rgba(255,255,255,0.08);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:900;color:${stColor[actTimerState]};">${stLabel[actTimerState]}</div>
+        </div>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px;padding-bottom:24px;">
+      ${actTimerState==='finished'?`
+        <div style="width:100%;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:16px;padding:20px;text-align:center;">
+          <div style="font-size:60px;margin-bottom:12px;">🏆</div>
+          <div class="white f20 f900 mb4">Activité terminée !</div>
+          <div class="gray f12 mb16">${act.name} · ${fmtTime(actTimerSec)}${isSwim?' · '+actLaps+' longueurs':''}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+            ${[['⏱',fmtTime(actTimerSec),'Durée'],['🔥',calBurned+' kcal','Calories'],isSwim?['🏊',actLaps+' long.','Longueurs']:['💪',act.name,'Activité'],['📅',new Date().toLocaleDateString('fr-FR'),'Date']].map(([ic,v,l])=>`<div style="background:rgba(0,200,190,0.06);border:1px solid rgba(0,200,190,0.1);border-radius:12px;padding:12px;text-align:center;"><div style="font-size:20px;">${ic}</div><div style="color:var(--c);font-size:15px;font-weight:900;">${v}</div><div class="gray f11">${l}</div></div>`).join('')}
+          </div>
+          <button onclick="shareActivity();" style="background:linear-gradient(135deg,var(--c),#4ECDC4);border:none;color:#05111f;border-radius:12px;padding:13px;font-weight:900;font-size:14px;cursor:pointer;width:100%;margin-bottom:10px;">📤 Partager mon activité</button>
+          <button onclick="streak++;totalSeances++;saveData();go('solo_dash');" style="background:var(--c);border:none;color:#05111f;border-radius:12px;padding:13px;font-weight:900;font-size:14px;cursor:pointer;width:100%;margin-bottom:10px;">✓ Valider l'activité</button>
+          <button onclick="resetActTimer();go('activity_picker');" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:12px;padding:11px;font-weight:900;font-size:13px;cursor:pointer;width:100%;">🔄 Nouvelle activité</button>
+        </div>
+      `:`
+        <div style="width:170px;height:170px;border-radius:50%;border:5px solid ${actTimerState==='running'?act.color:'rgba(255,255,255,0.12)'};display:flex;flex-direction:column;align-items:center;justify-content:center;background:${act.color}10;margin:8px auto;">
+          <div style="font-size:28px;margin-bottom:4px;">${act.icon}</div>
+          <div id="act-time" style="color:${act.color};font-size:32px;font-weight:900;line-height:1;">${fmtTime(actTimerSec)}</div>
+          <div class="gray f11" style="margin-top:2px;">durée</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;">
+          <div style="background:rgba(0,200,190,0.06);border:1px solid rgba(0,200,190,0.12);border-radius:12px;padding:14px;text-align:center;">
+            <div style="font-size:20px;">🔥</div>
+            <div id="act-cal" style="color:var(--c);font-size:22px;font-weight:900;">${calBurned}</div>
+            <div class="gray f11">kcal estimées</div>
+          </div>
+          ${isSwim?`<div onclick="actLaps++;const el=document.getElementById('act-laps');if(el)el.textContent=actLaps;" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:12px;padding:14px;text-align:center;cursor:pointer;">
+            <div style="font-size:20px;">🏊</div>
+            <div id="act-laps" style="color:#3B82F6;font-size:22px;font-weight:900;">${actLaps}</div>
+            <div style="color:#3B82F6;font-size:10px;font-weight:900;">longueurs · appuie +1</div>
+          </div>`:`<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px;text-align:center;">
+            <div style="font-size:20px;">${act.icon}</div>
+            <div style="color:white;font-size:16px;font-weight:900;">${act.name}</div>
+            <div class="gray f11">${act.desc.split('·')[0].trim()}</div>
+          </div>`}
+        </div>
+        ${actTimerState==='idle'?`
+        <div class="gray f12" style="text-align:center;">${act.desc}</div>
+        <button onclick="startActTimer();" style="width:100%;background:${act.color};border:none;color:#05111f;border-radius:14px;padding:18px;font-weight:900;font-size:16px;cursor:pointer;">${act.icon} Démarrer ${act.name}</button>
+        `:actTimerState==='running'?`
+        <div style="display:flex;gap:10px;width:100%;">
+          <button onclick="pauseActTimer();" style="flex:1;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:#F59E0B;border-radius:12px;padding:14px;font-weight:900;font-size:14px;cursor:pointer;">⏸ Pause</button>
+          <button onclick="stopActTimer();" style="flex:1;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#EF4444;border-radius:12px;padding:14px;font-weight:900;font-size:14px;cursor:pointer;">⏹ Terminer</button>
+        </div>
+        `:actTimerState==='paused'?`
+        <div style="display:flex;gap:10px;width:100%;">
+          <button onclick="resumeActTimer();" style="flex:1;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#10B981;border-radius:12px;padding:14px;font-weight:900;font-size:14px;cursor:pointer;">▶ Reprendre</button>
+          <button onclick="stopActTimer();" style="flex:1;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#EF4444;border-radius:12px;padding:14px;font-weight:900;font-size:14px;cursor:pointer;">⏹ Terminer</button>
+        </div>
+        `:''}
+      `}
+      </div>
+    </div>`;
+  }
+
   else if(s==='run_tracker'){
     const {speed,cal}=runCalc();
     const stColor={idle:'rgba(255,255,255,0.4)',running:'#10B981',paused:'#F59E0B',finished:'#00C8BE'};
     const stLabel={idle:'⬜ Prêt',running:'● En cours',paused:'⏸ Pause',finished:'✓ Terminé'};
     sc.innerHTML=`<div class="screen" style="background:#05111f;">
       <div style="background:linear-gradient(135deg,#05111f,#072d3d);padding:40px 20px 12px;">
-        <div onclick="if(runState!=='idle')stopRun();go('solo_seances');" style="color:rgba(255,255,255,0.5);font-size:12px;cursor:pointer;margin-bottom:8px;">← Séances</div>
-        <div class="sb"><div class="white f20 f900">🏃 Course à pied</div><div style="background:rgba(255,255,255,0.08);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:900;color:${stColor[runState]};">${stLabel[runState]}</div></div>
+        <div onclick="if(runState!=='idle')stopRun();go('activity_picker');" style="color:rgba(255,255,255,0.5);font-size:12px;cursor:pointer;margin-bottom:8px;">← Activités</div>
+        <div class="sb"><div class="white f20 f900">${currentActivity.icon} ${currentActivity.name}</div><div style="background:rgba(255,255,255,0.08);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:900;color:${stColor[runState]};">${stLabel[runState]}</div></div>
       </div>
       ${runState!=='idle'?`<div id="run-map" style="height:200px;background:#07192a;display:block;"></div>`:''}
       <div style="padding:${runState==='idle'?'20px':'12px'} 20px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-bottom:24px;">
       ${runState==='idle'?`
         <div style="background:rgba(0,200,190,0.06);border:1px solid rgba(0,200,190,0.15);border-radius:16px;padding:20px;text-align:center;margin-top:8px;">
-          <div style="font-size:56px;margin-bottom:10px;">🏃</div>
-          <div class="white f16 f900 mb8">Tracker de course GPS</div>
+          <div style="font-size:56px;margin-bottom:10px;">${currentActivity.icon}</div>
+          <div class="white f16 f900 mb8">Tracker ${currentActivity.name} GPS</div>
           <div class="gray f12 mb16">Tracé en temps réel · Stats auto · Partage social</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;text-align:left;">
             ${[['📍','Tracé GPS','Route enregistrée'],['⏱','Chronomètre','Temps en direct'],['⚡','Vitesse','km/h calculée auto'],['🔥','Calories','Estimation ~65 kcal/km']].map(([ic,t,d])=>`<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px;"><div style="font-size:18px;margin-bottom:3px;">${ic}</div><div class="white f12 f900">${t}</div><div class="gray" style="font-size:10px;">${d}</div></div>`).join('')}
           </div>
-          <button onclick="startRun();" style="background:var(--c);border:none;color:#05111f;border-radius:14px;padding:16px;font-weight:900;font-size:15px;cursor:pointer;width:100%;">🏃 Démarrer la course</button>
+          <button onclick="startRun();" style="background:${currentActivity.color};border:none;color:#05111f;border-radius:14px;padding:16px;font-weight:900;font-size:15px;cursor:pointer;width:100%;">${currentActivity.icon} Démarrer ${currentActivity.name}</button>
         </div>
-        ${runHistory.length>0?`
+        ${runHistory.filter(r=>r.type==='gps'||!r.type).length>0?`
         <div style="margin-top:4px;">
-          <div class="white f13 f900 mb8">📋 Historique des courses</div>
-          ${runHistory.map((r,i)=>`<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-            <div style="width:34px;height:34px;border-radius:8px;background:rgba(0,200,190,0.1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🏃</div>
+          <div class="white f13 f900 mb8">📋 Historique GPS</div>
+          ${runHistory.filter(r=>r.type==='gps'||!r.type).map((r,i)=>`<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="width:34px;height:34px;border-radius:8px;background:rgba(0,200,190,0.1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${r.icon||'🏃'}</div>
             <div style="flex:1;">
-              <div class="white f12 f900">${r.dist.toFixed(2)} km · ${fmtTime(r.time)}</div>
+              <div class="white f12 f900">${r.name||'Course'} · ${r.dist.toFixed(2)} km</div>
               <div class="gray f11">${r.date} · ${r.speed.toFixed(1)} km/h · ${r.cal} kcal</div>
             </div>
             <div style="background:rgba(0,200,190,0.1);border-radius:6px;padding:3px 8px;color:var(--c);font-size:11px;font-weight:900;">${i===0?'🥇':'#'+(i+1)}</div>
@@ -1217,7 +1334,7 @@ function haversine(lat1,lng1,lat2,lng2){
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 function fmtTime(s){const m=Math.floor(s/60);const ss=s%60;return String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');}
-function runCalc(){const speed=runSec>0?(runDist/(runSec/3600)):0;const cal=Math.round(runDist*65);return{speed,cal};}
+function runCalc(){const speed=runSec>0?(runDist/(runSec/3600)):0;const cal=Math.round(runDist*(currentActivity.calPer||65));return{speed,cal};}
 
 function initRunMap(){
   setTimeout(()=>{
@@ -1249,11 +1366,12 @@ function updateRunStats(){
 
 function startSimulation(){
   if(runSimIv)return;
+  const speedFactor=currentActivity.id==='bike'?2.8:currentActivity.id==='walk'?0.5:1.0;
   runSimIv=setInterval(()=>{
     if(runState!=='running')return;
     const prev=runPoints.length>0?runPoints[runPoints.length-1]:[48.8566,2.3522];
     const[dlat,dlng]=RUN_SIM_DIRS[runSimStep%RUN_SIM_DIRS.length];
-    addRunPoint(prev[0]+dlat,prev[1]+dlng);
+    addRunPoint(prev[0]+dlat*speedFactor,prev[1]+dlng*speedFactor);
     runSimStep++;
   },3000);
 }
@@ -1296,7 +1414,7 @@ function stopRun(){
   // Save to history if meaningful run (>50m)
   if(runDist>0.05){
     const {speed,cal}=runCalc();
-    runHistory.unshift({date:new Date().toLocaleDateString('fr-FR'),time:runSec,dist:runDist,speed,cal});
+    runHistory.unshift({date:new Date().toLocaleDateString('fr-FR'),time:runSec,dist:runDist,speed,cal,type:'gps',activity:currentActivity.id,icon:currentActivity.icon,name:currentActivity.name});
     if(runHistory.length>10)runHistory=runHistory.slice(0,10);
     saveData();
   }
@@ -1314,8 +1432,8 @@ function resetRun(){
 
 function shareRun(){
   const{speed,cal}=runCalc();
-  const text='🏃 Ma course M.C.P !\n⏱ '+fmtTime(runSec)+' | 📍 '+runDist.toFixed(2)+' km | ⚡ '+speed.toFixed(1)+' km/h | 🔥 '+cal+' kcal\n#MCP #Running #Fitness #MonCoachPersonnel';
-  if(navigator.share){navigator.share({title:'Ma course M.C.P',text}).catch(()=>showShareLinks(text));}
+  const text=currentActivity.icon+' '+currentActivity.name+' M.C.P !\n⏱ '+fmtTime(runSec)+' | 📍 '+runDist.toFixed(2)+' km | ⚡ '+speed.toFixed(1)+' km/h | 🔥 '+cal+' kcal\n#MCP #Fitness #MonCoachPersonnel';
+  if(navigator.share){navigator.share({title:'Mon activité M.C.P',text}).catch(()=>showShareLinks(text));}
   else showShareLinks(text);
 }
 
@@ -1437,6 +1555,65 @@ function completeSeance(){
   go('solo_dash');
 }
 // ───────────────────────────────────────────────────────────────────────────
+
+// ─── ACTIVITY TIMER HELPERS ─────────────────────────────────────────────────
+function updateActDisplay(){
+  const calBurned=Math.round(actTimerSec*(currentActivity.calPer/60)*(onbForm.poids/70));
+  const tEl=document.getElementById('act-time');
+  const cEl=document.getElementById('act-cal');
+  if(tEl)tEl.textContent=fmtTime(actTimerSec);
+  if(cEl)cEl.textContent=calBurned;
+}
+
+function startActTimer(){
+  actTimerState='running';
+  render();
+  actTimerIv=setInterval(()=>{actTimerSec++;updateActDisplay();},1000);
+}
+
+function pauseActTimer(){
+  actTimerState='paused';
+  clearInterval(actTimerIv);actTimerIv=null;
+  render();
+}
+
+function resumeActTimer(){
+  actTimerState='running';
+  render();
+  actTimerIv=setInterval(()=>{actTimerSec++;updateActDisplay();},1000);
+}
+
+function stopActTimer(){
+  actTimerState='finished';
+  clearInterval(actTimerIv);actTimerIv=null;
+  if(actTimerSec>30){
+    const calBurned=Math.round(actTimerSec*(currentActivity.calPer/60)*(onbForm.poids/70));
+    runHistory.unshift({
+      date:new Date().toLocaleDateString('fr-FR'),
+      time:actTimerSec,dist:0,speed:0,cal:calBurned,
+      type:'timer',activity:currentActivity.id,
+      icon:currentActivity.icon,name:currentActivity.name,
+      laps:currentActivity.id==='swim'?actLaps:undefined
+    });
+    if(runHistory.length>10)runHistory=runHistory.slice(0,10);
+    saveData();
+  }
+  render();
+}
+
+function resetActTimer(){
+  clearInterval(actTimerIv);actTimerIv=null;
+  actTimerSec=0;actTimerState='idle';actLaps=0;
+}
+
+function shareActivity(){
+  const calBurned=Math.round(actTimerSec*(currentActivity.calPer/60)*(onbForm.poids/70));
+  const lapTxt=currentActivity.id==='swim'?' | 🏊 '+actLaps+' longueurs':'';
+  const text=currentActivity.icon+' '+currentActivity.name+' avec M.C.P !\n⏱ '+fmtTime(actTimerSec)+lapTxt+' | 🔥 '+calBurned+' kcal\n#MCP #Fitness #MonCoachPersonnel';
+  if(navigator.share){navigator.share({title:'Mon activité M.C.P',text}).catch(()=>{});}
+  else{const enc=encodeURIComponent(text);window.open('https://wa.me/?text='+enc,'_blank');}
+}
+// ────────────────────────────────────────────────────────────────────────────
 
 loadData();
 go('login');
